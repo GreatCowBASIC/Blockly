@@ -1,0 +1,2346 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/blockly@10.4.3/blockly.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        #webpageconsole, #WebPageErrors {
+            width: 400px;
+            height: 200px;
+            min-width: 200px;
+            min-height: 100px;
+            border: 1px solid black;
+            background: #f4f4f4;
+            padding: 10px;
+            font-family: monospace;
+            overflow-y: auto;
+            margin: 10px;
+            position: relative;
+            resize: both;
+            white-space: pre-wrap;
+            user-select: text;
+        }
+
+        #webpageconsole-header, #WebPageErrors-header {
+            background: #ddd;
+            padding: 5px;
+            font-weight: bold;
+            margin: 10px 10px 0 10px;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            #webpageconsole-header button, #WebPageErrors-header button {
+                padding: 2px 8px;
+                font-size: 12px;
+                cursor: pointer;
+                margin-left: 5px;
+            }
+
+                #webpageconsole-header button.copied {
+                    background-color: #4CAF50;
+                    color: white;
+                }
+
+                #webpageconsole-header button.error {
+                    background-color: #f44336;
+                    color: white;
+                }
+
+        #consoleContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            margin-top: 10px;
+        }
+
+        #blocklyDiv {
+            margin-bottom: 10px;
+            resize: both;
+            overflow: auto;
+            min-width: 200px;
+            min-height: 200px;
+            color: black;
+        }
+
+        .controlButtons {
+            margin: 10px 0;
+        }
+
+        button {
+            margin-right: 10px;
+            padding: 5px 10px;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .content {
+            flex: 1;
+        }
+
+        .blocklyToolboxDiv {
+            background-color: white;
+        }
+
+        .blocklyMainBackground {
+            fill: #F4F4F4;
+        }
+
+        .blocklyMainBackground {
+            stroke: black;
+            stroke-width: 4px;
+        }
+
+        .blocklyWorkspace {
+            background-image: none;
+        }
+
+        /* Style for black outline around blocks, excluding text */
+        .blocklyBlockCanvas .blocklyDraggable > *:not(.blocklyText) {
+            stroke: black !important; /* Black outline for all block elements except text */
+            stroke-width: 1px !important; /* Visible edge */
+        }
+
+        /* Ensure text color and styling remain unaffected */
+        .blocklyText {
+            stroke: none !important; /* Explicitly remove stroke from text */
+            color: inherit !important; /* Preserve original text color */
+        }
+    </style>
+</head>
+<body>
+    <!-- Header and Title -->
+    <div class="content">
+        <h2>BLOCKLY for GCBASIC - build 06082025 13:34</h2>
+
+        <!-- Project Management Controls -->
+        <div class="controlButtons">
+            <button id="runButton" onclick="runCode()" disabled>Generate Code</button>
+            <button onclick="importBlocks()">Import Blocks...</button>
+            <button onclick="newProject()">New Project</button>
+            <button id="openProjectButton" onclick="openProject()">Open File...</button>
+            <button onclick="saveProject()">Save File...</button>
+            <button onclick="exportCode()">Export Code</button>
+            <button onclick="resetWorkspace()">Reset Workspace</button>
+            <button id="toggleGridButton" onclick="toggleGrid()">Toggle Grid (On)</button>
+        </div>
+
+        <!-- Blockly Workspace -->
+        <div id="blocklyDiv" style="height: 460px; width: 860px;"></div>
+
+        <!-- Output Displays -->
+        <div id="consoleContainer">
+            <div>
+                <h3 id="WebPageErrors-header">System Log <button onclick="clearErrors(event)">Clear</button></h3>
+                <div id="WebPageErrors"></div>
+            </div>
+            <div>
+                <h3 id="webpageconsole-header">GCBASIC Output <button id="copyConsoleButton" onclick="copyConsole(event)">Copy</button><button onclick="clearConsole(event)">Clear</button></h3>
+                <div id="webpageconsole"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbox Definition -->
+    <xml id="toolbox" style="display: none">
+        <category name="Setup" colour="#FFD700">
+            <block type="select_chip"></block>
+            <block type="define_constant"></block>
+        </category>
+        <sep></sep>
+        <category name="Logic" colour="#D1C4E9">
+        </category>
+        <category name="Math" colour="#2196F3">
+            <block type="math_number"></block>
+            <block type="math_operation"></block>
+            <block type="math_odd_even"></block>
+            <block type="math_modulo"></block>
+        </category>
+        <category name="Variables" colour="#EF9A9A">
+            <block type="string_variable"></block>
+            <block type="get_variable"></block>
+            <block type="set_variable"></block>
+        </category>
+        <sep></sep>
+        <category name="Loops" colour="#A5D6A7">
+            <block type="do_loop_simplest"></block>
+            <block type="do_loop_simple"></block>
+            <block type="do_loop"></block>
+            <block type="repeat_loop_simple"></block>
+            <block type="repeat_loop"></block>
+            <sep></sep>
+        </category>
+        <category name="Text" colour="#FFCA28">
+            <block type="print_text"></block>
+        </category>
+        <category name="Lists" colour="#4DB6AC">
+        </category>
+        <category name="Functions" colour="#D7CCC8">
+        </category>
+        <sep></sep>
+        <category name="Commands" colour="200">
+            <category name="Wait" colour="200">
+                <block type="wait_fixed"></block>
+                <!--<block type="wait_conditional"></block>-->
+            </category>
+            <block type="lcd_cls"></block>
+        </category>
+        <sep></sep>
+        <category name="Containers" colour="#64B5F6">
+            <block type="constant_block_group"></block>
+            <block type="variable_block_group"></block>
+        </category>
+    </xml>
+
+    <!-- Main Script -->
+    <script>
+        var workspace;
+        var indentationStack = [1];
+        let previousName = {};
+        let gridVisible = true; // Track grid visibility state
+
+        // Blockly.Blocks Definitions
+        Blockly.Blocks['condition_wait_fixed'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("&& Wait")
+                    .appendField(new Blockly.FieldNumber(1, 1), "VALUE")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["us", "us"],
+                        ["10us", "10us"],
+                        ["ms", "ms"],
+                        ["10ms", "10ms"],
+                        ["s", "s"],
+                        ["m", "m"],
+                        ["h", "h"]
+                    ]), "UNIT");
+                this.appendValueInput("CONDITION")
+                    .setCheck("Boolean")
+                    .setAlign(Blockly.ALIGN_RIGHT);
+                this.appendValueInput("DELAY_VALUE")
+                    .setCheck("Number")
+                    .setAlign(Blockly.ALIGN_RIGHT);
+                this.setColour(200);
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip("Delays program for a fixed time if a condition is true. Ranges: us (1-65535), 10us (10-2550), ms (1-65535), 10ms (10-2550), s (1-255), m (1-255), h (1-255).");
+            }
+        };
+
+        Blockly.Blocks['constant_block_group'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Group of ")
+                    .appendField(new Blockly.FieldTextInput(""), "NAME")
+                    .appendField("constants");
+                this.appendStatementInput("INNER_BLOCKS")
+                    .setCheck(['define_constant']);
+                this.setColour(160);
+                this.setTooltip("Group Constants blocks inside.");
+                this.setInputsInline(true);
+            }
+        };
+
+        Blockly.Blocks['define_constant'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Define Constant")
+                    .appendField(new Blockly.FieldTextInput(""), "NAME")
+                    .appendField(" ")
+                    .appendField(new Blockly.FieldTextInput(""), "VALUE");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(160);
+                this.setTooltip("Enter a unique constant name and its value");
+                this.setOnChange(function (changeEvent) {
+                    if (changeEvent.type === Blockly.Events.CHANGE && changeEvent.element === "field" && changeEvent.name === "NAME") {
+                        const blockId = this.id;
+                        const newValue = this.getFieldValue("NAME").toUpperCase();
+                        const oldValue = previousName[blockId] || "";
+                        const blocks = Blockly.getMainWorkspace().getAllBlocks();
+                        for (let block of blocks) {
+                            if (block !== this && block.getFieldValue("NAME") === newValue) {
+                                logToWebPageErrors(`Error: The name "${newValue}" is already in use. Reverting name.\n`, "ERROR");
+                                this.setFieldValue(oldValue, "NAME");
+                                return;
+                            }
+                        }
+                        previousName[blockId] = newValue;
+                        this.setFieldValue(newValue, "NAME");
+                    }
+                });
+            }
+        };
+
+        Blockly.Blocks['do_loop'] = {
+            init: function () {
+                this.appendDummyInput("DO_HEADER")
+                    .appendField("Do")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
+                    ]), "DO_TYPE")
+                    .appendField(new Blockly.FieldTextInput("true"), "DO_CONDITION");
+                this.appendStatementInput("DO_CODE")
+                    .setCheck(null);
+                this.appendDummyInput()
+                    .appendField("Exit Do if")
+                    .appendField(new Blockly.FieldTextInput("false"), "EXIT_CONDITION");
+                this.appendStatementInput("AFTER_EXIT_CODE")
+                    .setCheck(null);
+                this.appendDummyInput("LOOP_FOOTER")
+                    .appendField("Loop")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
+                    ]), "LOOP_TYPE")
+                    .appendField(new Blockly.FieldTextInput("true"), "LOOP_CONDITION");
+                this.setColour('#A5D6A7');
+                this.setTooltip("1. Generates code for a loop based on a condition.");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setOnChange(function (changeEvent) {
+                    var doType = this.getFieldValue("DO_TYPE");
+                    var loopType = this.getFieldValue("LOOP_TYPE");
+                    var doConditionField = this.getField("DO_CONDITION");
+                    var loopConditionField = this.getField("LOOP_CONDITION");
+                    var fieldName;
+                    if (changeEvent.element === "field") {
+                        fieldName = changeEvent.name;
+                    }
+                    if (doType === "FOREVER") {
+                        doConditionField.setEnabled(false);
+                        loopConditionField.setEnabled(false);
+                        if (loopType !== "NONE") {
+                            this.setFieldValue("NONE", "LOOP_TYPE");
+                        }
+                    } else {
+                        doConditionField.setEnabled(true);
+                        loopConditionField.setEnabled(true);
+                    }
+                    if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
+                        if (fieldName === "DO_TYPE") {
+                            logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
+                            this.setFieldValue("NONE", "LOOP_TYPE");
+                        }
+                        if (fieldName === "LOOP_TYPE") {
+                            logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
+                            this.setFieldValue("NONE", "DO_TYPE");
+                        }
+                    }
+                });
+            }
+        };
+
+        Blockly.Blocks['do_loop_simple'] = {
+            init: function () {
+                this.appendDummyInput("DO_HEADER")
+                    .appendField("Do")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
+                    ]), "DO_TYPE")
+                    .appendField(new Blockly.FieldTextInput("true"), "DO_CONDITION");
+                this.appendStatementInput("DO_CODE")
+                    .setCheck(null);
+                this.appendDummyInput("LOOP_FOOTER")
+                    .appendField("Loop")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
+                    ]), "LOOP_TYPE")
+                    .appendField(new Blockly.FieldTextInput("true"), "LOOP_CONDITION");
+                this.setColour('#A5D6A7');
+                this.setTooltip("2. Generates a simple loop without an exit condition.");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setOnChange(function (changeEvent) {
+                    var doType = this.getFieldValue("DO_TYPE");
+                    var loopType = this.getFieldValue("LOOP_TYPE");
+                    var doConditionField = this.getField("DO_CONDITION");
+                    var loopConditionField = this.getField("LOOP_CONDITION");
+                    var fieldName;
+                    if (changeEvent.element === "field") {
+                        fieldName = changeEvent.name;
+                    }
+                    if (doType === "FOREVER") {
+                        doConditionField.setEnabled(false);
+                        loopConditionField.setEnabled(false);
+                        if (loopType !== "NONE") {
+                            this.setFieldValue("NONE", "LOOP_TYPE");
+                        }
+                    } else {
+                        doConditionField.setEnabled(true);
+                        loopConditionField.setEnabled(true);
+                    }
+                    if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
+                        if (fieldName === "DO_TYPE") {
+                            logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
+                            this.setFieldValue("NONE", "LOOP_TYPE");
+                        }
+                        if (fieldName === "LOOP_TYPE") {
+                            logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
+                            this.setFieldValue("NONE", "DO_TYPE");
+                        }
+                    }
+                });
+            }
+        };
+
+        Blockly.Blocks['do_loop_simplest'] = {
+            init: function () {
+                this.appendDummyInput("DO_HEADER")
+                    .appendField("Do");
+                this.appendStatementInput("DO_CODE")
+                    .setCheck(null);
+                this.appendDummyInput("LOOP_FOOTER")
+                    .appendField("Loop");
+                this.setColour('#A5D6A7');
+                this.setTooltip("2. Generates a simple loop without an exit condition.");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+            }
+        };
+
+        Blockly.Blocks['export_code'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Export Code");
+                this.setColour(180);
+                this.setTooltip("Converts Blockly blocks to GCBASIC.");
+            }
+        };
+
+        Blockly.Blocks['get_variable'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField(new Blockly.FieldVariable("myVar"), "VAR_NAME");
+                this.setColour('#EF9A9A');
+                this.setOutput(true, null);
+                this.setTooltip("Gets a variable.");
+            },
+            onchange: function (event) {
+                if (event.type === Blockly.Events.VAR_RENAME) {
+                    var workspace = this.workspace;
+                    var oldName = event.oldName;
+                    var newName = event.newName;
+                    var numBlock = workspace.getAllBlocks().find(block =>
+                        block.type === 'numeric_variable' && block.getFieldValue("VAR_NAME") === oldName
+                    );
+                    if (numBlock) {
+                        numBlock.setFieldValue(newName, "VAR_NAME");
+                    }
+                }
+            }
+        };
+
+        Blockly.Blocks['import_blocks'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Import Blocks");
+                this.setColour(180);
+                this.setTooltip("Loads blocks from an XML file without clearing existing ones.");
+            }
+        };
+
+        Blockly.Blocks['lcd_cls'] = {
+            init: function () {
+                this.appendDummyInput().appendField("CLS");
+                this.setColour(200);
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+            }
+        };
+
+        Blockly.Blocks['math_modulo'] = {
+            init: function () {
+                this.appendValueInput("A")
+                    .setCheck(null)
+                    .appendField("Modulo");
+                this.appendValueInput("B")
+                    .setCheck(null)
+                    .appendField("mod");
+                this.setColour('#2196F3');
+                this.setOutput(true, null);
+                this.setTooltip("Returns the remainder of dividing the first number by the second.");
+            }
+        };
+
+        Blockly.Blocks['math_number'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField(new Blockly.FieldNumber(0), "NUMBER");
+                this.setColour('#2196F3');
+                this.setOutput(true, null);
+                this.setTooltip("A number value.");
+            }
+        };
+
+        Blockly.Blocks['math_odd_even'] = {
+            init: function () {
+                this.appendValueInput("NUMBER")
+                    .setCheck(null)
+                    .appendField("Is number");
+                this.appendDummyInput()
+                    .appendField(new Blockly.FieldDropdown([
+                        ["odd", "ODD"],
+                        ["even", "EVEN"]
+                    ]), "CHECK");
+                this.setColour('#2196F3');
+                this.setOutput(true, null);
+                this.setTooltip("Checks if a number is odd or even.");
+            }
+        };
+
+        Blockly.Blocks['math_operation'] = {
+            init: function () {
+                this.appendValueInput("A")
+                    .setCheck(null)
+                    .appendField("Calculate");
+                this.appendValueInput("B")
+                    .setCheck(null)
+                    .appendField(new Blockly.FieldDropdown([
+                        ["+", "+"],
+                        ["-", "-"],
+                        ["*", "*"],
+                        ["/", "/"]
+                    ]), "OPERATOR")
+                    .setAlign(Blockly.ALIGN_RIGHT);
+                this.setInputsInline(true);
+                this.setColour('#2196F3');
+                this.setOutput(true, null);
+                this.setTooltip("Performs addition, subtraction, multiplication, or division on two numbers.");
+            }
+        };
+
+        Blockly.Blocks['math_operations'] = {
+            init: function () {
+                this.appendValueInput("A")
+                    .setCheck("Number")
+                    .appendField("Calculate");
+                this.appendDummyInput()
+                    .appendField(new Blockly.FieldDropdown([
+                        ["+", "ADD"],
+                        ["-", "SUBTRACT"],
+                        ["*", "MULTIPLY"],
+                        ["/", "DIVIDE"]
+                    ]), "OPERATOR");
+                this.appendValueInput("B")
+                    .setCheck("Number");
+                this.setOutput(true, "Number");
+                this.setColour('#2196F3');
+                this.setTooltip("Perform a basic math operation.");
+            }
+        };
+
+        Blockly.Blocks['numeric_variable'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Dim")
+                    .appendField(new Blockly.FieldTextInput(""), "VAR_NAME")
+                    .appendField("As")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["Byte", "Byte"],
+                        ["Word", "Word"],
+                        ["Integer", "Integer"],
+                        ["Long", "Long"]
+                    ]), "VAR_TYPE")
+                    .appendField("=")
+                    .appendField(new Blockly.FieldNumber(0), "INITIAL_VALUE");
+                this.setColour('#EF9A9A');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip("Declares a numeric variable.");
+            }
+        };
+
+        Blockly.Blocks['open_project'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Open Project");
+                this.setColour(180);
+                this.setTooltip("Loads a saved Blockly project.");
+            }
+        };
+
+        Blockly.Blocks['print_text'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Print")
+                    .appendField(new Blockly.FieldTextInput('"Hello World!"', this.validateField), "TEXT");
+                this.setColour('#FFCA28');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+            },
+            validateField: function (newValue) {
+                if (newValue.startsWith('"') && !newValue.endsWith('"')) {
+                    logToWebPageErrors(`Error: Unterminated string "${newValue}" in Text field`, "ERROR");
+                    return newValue;
+                }
+                return newValue;
+            }
+        };
+
+        Blockly.Blocks['repeat_loop'] = {
+            init: function () {
+                this.appendDummyInput("REPEAT_HEADER")
+                    .appendField("Repeat")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["Forever", "FOREVER"],
+                        ["Times", "TIMES"]
+                    ]), "REPEAT_TYPE")
+                    .appendField(new Blockly.FieldTextInput("1"), "REPEAT_COUNT");
+                this.appendStatementInput("REPEAT_CODE")
+                    .setCheck(null);
+                this.appendDummyInput()
+                    .appendField("Exit Repeat if")
+                    .appendField(new Blockly.FieldTextInput("false"), "EXIT_CONDITION");
+                this.appendStatementInput("AFTER_EXIT_CODE")
+                    .setCheck(null);
+                this.appendDummyInput()
+                    .appendField("End Repeat");
+                this.setColour('#A5D6A7');
+                this.setTooltip("Repeats code forever or a specified number of times with optional early exit.");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setOnChange(function (changeEvent) {
+                    var repeatType = this.getFieldValue("REPEAT_TYPE");
+                    var repeatCountField = this.getField("REPEAT_COUNT");
+                    if (repeatType === "FOREVER") {
+                        repeatCountField.setEnabled(false);
+                        repeatCountField.setValue("");
+                    } else {
+                        repeatCountField.setEnabled(true);
+                        if (!repeatCountField.getValue()) {
+                            repeatCountField.setValue("1");
+                        }
+                    }
+                });
+            }
+        };
+
+        Blockly.Blocks['repeat_loop_simple'] = {
+            init: function () {
+                this.appendDummyInput("REPEAT_HEADER")
+                    .appendField("Repeat")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["Times", "TIMES"]
+                    ]), "REPEAT_TYPE")
+                    .appendField(new Blockly.FieldTextInput("1"), "REPEAT_COUNT");
+                this.appendStatementInput("REPEAT_CODE")
+                    .setCheck(null);
+                this.appendDummyInput()
+                    .appendField("End Repeat");
+                this.setColour('#A5D6A7');
+                this.setTooltip("Repeats code forever or a specified number of times without early exit.");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setOnChange(function (changeEvent) {
+                    var repeatType = this.getFieldValue("REPEAT_TYPE");
+                    var repeatCountField = this.getField("REPEAT_COUNT");
+                    if (repeatType === "FOREVER") {
+                        repeatCountField.setEnabled(false);
+                        repeatCountField.setValue("");
+                    } else {
+                        repeatCountField.setEnabled(true);
+                        if (!repeatCountField.getValue()) {
+                            repeatCountField.setValue("1");
+                        }
+                    }
+                });
+            }
+        };
+
+        Blockly.Blocks['reset_workspace'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Reset Workspace");
+                this.setColour(180);
+                this.setTooltip("Clears all blocks with confirmation.");
+            }
+        };
+
+        Blockly.Blocks['save_project'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Save Project");
+                this.setColour(180);
+                this.setTooltip("Saves the current workspace as an XML file.");
+            }
+        };
+
+        Blockly.Blocks['select_chip'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Select Chip")
+                    .appendField(new Blockly.FieldDropdown(this.getChipOptions), "CHIP");
+                this.setColour(230);
+                this.setTooltip("Select a chip from the list");
+                this.setHelpUrl("");
+            },
+            getChipOptions: function () {
+                return chipData.map(chip => [chip.name, chip.name]);
+            }
+        };
+
+        Blockly.Blocks['set_variable'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Set")
+                    .appendField(new Blockly.FieldVariable("myVar"), "VAR_NAME")
+                    .appendField("=");
+                this.appendValueInput("VALUE")
+                    .setCheck(null)
+                    .setAlign(Blockly.ALIGN_RIGHT);
+                this.setColour('#EF9A9A');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip("Sets a variable.");
+            },
+            onchange: function (event) {
+                if (event.type === Blockly.Events.VAR_RENAME) {
+                    var workspace = this.workspace;
+                    var oldName = event.oldName;
+                    var newName = event.newName;
+                    var numBlock = workspace.getAllBlocks().find(block =>
+                        block.type === 'numeric_variable' && block.getFieldValue("VAR_NAME") === oldName
+                    );
+                    if (numBlock) {
+                        numBlock.setFieldValue(newName, "VAR_NAME");
+                    }
+                }
+            }
+        };
+
+        Blockly.Blocks['string_variable'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Dim")
+                    .appendField(new Blockly.FieldTextInput("mystring"), "VAR_NAME")
+                    .appendField("As String *")
+                    .appendField(new Blockly.FieldNumber(10, 1, 255), "LENGTH")
+                    .appendField("=")
+                    .appendField(new Blockly.FieldTextInput("\"\""), "INITIAL_VALUE");
+                this.setColour('#EF9A9A');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip("Declares a string variable with a specified name, length (1-255), and initial value.");
+            }
+        };
+
+        Blockly.Blocks['variable_block_group'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Group of ")
+                    .appendField(new Blockly.FieldTextInput(""), "NAME")
+                    .appendField("variables");
+                this.appendStatementInput("INNER_BLOCKS")
+                    .setCheck(['numeric_variable']);
+                this.setColour('#EF9A9A');
+                this.setTooltip("Group Variable Defintions blocks inside.");
+                this.setInputsInline(true);
+            }
+        };
+
+        Blockly.Blocks['wait_100ms'] = {
+            init: function () {
+                this.appendDummyInput().appendField("Wait 100ms");
+                this.setColour(200);
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+            }
+        };
+
+        Blockly.Blocks['wait_conditional'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Wait")
+                    .appendField(new Blockly.FieldDropdown([
+                        ["While", "WHILE"],
+                        ["Until", "UNTIL"]
+                    ]), "MODE")
+                    .appendField("&&");
+                this.appendValueInput("CONDITION")
+                    .setCheck("Boolean")
+                    .setAlign(Blockly.ALIGN_RIGHT);
+                this.setColour(200);
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip("Delays program while or until a condition is true.");
+            }
+        };
+
+
+        Blockly.Blocks['wait_fixed'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Wait")
+                    .appendField(new Blockly.FieldLabel("[", "OPEN_BRACKET"))
+                    .appendField(new Blockly.FieldNumber(1, 1), "VALUE")
+                    .appendField("or");
+                this.appendValueInput("DELAY_VALUE")
+                    .setCheck("Number")
+                    .setAlign(Blockly.ALIGN_RIGHT);
+                this.appendDummyInput()
+                    .appendField(new Blockly.FieldLabel("]", "CLOSE_BRACKET"))
+                    .appendField(new Blockly.FieldDropdown([
+                        ["us", "us"],
+                        ["10us", "10us"],
+                        ["ms", "ms"],
+                        ["10ms", "10ms"],
+                        ["s", "s"],
+                        ["m", "m"],
+                        ["h", "h"]
+                    ]), "UNIT");
+                this.setColour(200);
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip("Delays program for a fixed time.");
+
+                this.setOnChange(this.updateFieldState);
+            },
+
+            updateFieldState: function () {
+                let valueField = this.getField("VALUE");
+                let delayInput = this.getInput("DELAY_VALUE");
+
+                if (valueField && delayInput) {
+                    let hasConnection = delayInput.connection && delayInput.connection.targetConnection;
+                    let targetBlock = delayInput.connection && delayInput.connection.targetBlock();
+                    let isTargetEnabled = targetBlock ? targetBlock.isEnabled() : true; // True if no target
+
+                    if (hasConnection && isTargetEnabled) {
+                        valueField.setEnabled(false);
+                        this.styleDisabledField(valueField);
+                    } else {
+                        valueField.setEnabled(true);
+                        this.styleEnabledField(valueField);
+                    }
+                }
+            },
+
+            styleDisabledField: function (field) {
+                let blockColor = this.getColour();  // Get parent block color
+                let textElement = field.getTextElement();
+
+                if (textElement) {
+                    textElement.style.fill = blockColor;  // Match block color
+                    textElement.style.opacity = "0.5";  // Dim for readability
+                }
+            },
+
+            styleEnabledField: function (field) {
+                let textElement = field.getTextElement();
+
+                if (textElement) {
+                    textElement.style.fill = "";  // Restore original color
+                    textElement.style.opacity = "1";  // Reset visibility
+                }
+            }
+        };
+
+        //Blockly.Blocks['wait_fixed'] = {
+        //    init: function () {
+        //        this.appendDummyInput()
+        //            .appendField("Wait")
+        //            .appendField(new Blockly.FieldLabel("[", "OPEN_BRACKET"))
+        //            .appendField(new Blockly.FieldNumber(1, 1), "VALUE")
+        //            .appendField("or");
+        //        this.appendValueInput("DELAY_VALUE")
+        //            .setCheck("Number")
+        //            .setAlign(Blockly.ALIGN_RIGHT);
+        //        this.appendDummyInput()
+        //            .appendField(new Blockly.FieldLabel("]", "CLOSE_BRACKET"))
+        //            .appendField(new Blockly.FieldDropdown([
+        //                ["us", "us"],
+        //                ["10us", "10us"],
+        //                ["ms", "ms"],
+        //                ["10ms", "10ms"],
+        //                ["s", "s"],
+        //                ["m", "m"],
+        //                ["h", "h"]
+        //            ]), "UNIT");
+        //        this.setColour(200);
+        //        this.setPreviousStatement(true, null);
+        //        this.setNextStatement(true, null);
+        //        this.setTooltip("Delays program for a fixed time.");
+
+        //        this.setOnChange(this.updateFieldState);
+        //    },
+
+        //    updateFieldState: function () {
+        //        let valueField = this.getField("VALUE");
+        //        let delayInput = this.getInput("DELAY_VALUE");
+
+        //        if (valueField && delayInput) {
+        //            let hasConnection = delayInput.connection && delayInput.connection.targetConnection;
+
+        //            if (hasConnection) {
+        //                valueField.setEnabled(false);
+        //                this.styleDisabledField(valueField);
+        //            } else {
+        //                valueField.setEnabled(true);
+        //                this.styleEnabledField(valueField);
+        //            }
+        //        }
+        //    },
+
+        //    styleDisabledField: function (field) {
+        //        let blockColor = this.getColour();  // Get parent block color
+        //        let textElement = field.getTextElement();
+
+        //        if (textElement) {
+        //            textElement.style.fill = blockColor;  // Match block color
+        //            textElement.style.opacity = "0.5";  // Dim for readability
+        //        }
+        //    },
+
+        //    styleEnabledField: function (field) {
+        //        let textElement = field.getTextElement();
+
+        //        if (textElement) {
+        //            textElement.style.fill = "";  // Restore original color
+        //            textElement.style.opacity = "1";  // Reset visibility
+        //        }
+        //    }
+        //};
+
+
+        // Blockly.JavaScript.forBlock Definitions
+        //Blockly.JavaScript.forBlock['condition_wait_fixed'] = function (block) {
+        //    var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+        //    var value = Blockly.JavaScript.valueToCode(block, 'DELAY_VALUE', Blockly.JavaScript.ORDER_ATOMIC) || block.getFieldValue('VALUE');
+        //    var unit = block.getFieldValue('UNIT');
+        //    return tab() + `If ${condition} Then Wait ${value} ${unit}\n`;
+        //};
+
+        Blockly.JavaScript.forBlock['constant_block_group'] = function (block) {
+            var innerBlocksCode = Blockly.JavaScript.statementToCode(block, 'INNER_BLOCKS');
+            return `${innerBlocksCode}`;
+        };
+
+        Blockly.JavaScript.forBlock['define_constant'] = function (block) {
+            var name = block.getFieldValue('NAME');
+            var value = block.getFieldValue('VALUE') || '';
+            code = tab() + `#DEFINE ${name} ${value}\n`;
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['do_loop'] = function (block) {
+            var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            var doType = block.getFieldValue('DO_TYPE');
+            var doCondition = sanitizeCondition(block.getFieldValue('DO_CONDITION'));
+            var loopType = block.getFieldValue('LOOP_TYPE');
+            var loopCondition = sanitizeCondition(block.getFieldValue('LOOP_CONDITION'));
+            var exitCondition = sanitizeCondition(block.getFieldValue('EXIT_CONDITION'));
+            var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
+            var afterExitCode = Blockly.JavaScript.statementToCode(block, 'AFTER_EXIT_CODE') || '';
+            var code = [];
+            if (doType === "WHILE") {
+                code.push(tab() + `Do While ${doCondition}`);
+            } else if (doType === "UNTIL") {
+                code.push(tab() + `Do Until ${doCondition}`);
+            } else if (doType === "FOREVER") {
+                code.push(tab() + 'Do');
+            } else {
+                code.push(tab() + 'Do');
+            }
+            indentationStack[indentationStack.length - 1]++;
+            if (doCode.trim()) {
+                code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
+            } else {
+                code.push(tab() + '\' No DO_CODE provided');
+            }
+            if (exitCondition && exitCondition !== 'true' && exitCondition !== 'false') {
+                code.push(tab() + `If ${exitCondition} Then Exit Do`);
+            } else if (exitCondition === 'true') {
+                code.push(tab() + 'Exit Do');
+            }
+            if (afterExitCode.trim()) {
+                code.push(reformatCode(afterExitCode, indentationStack[indentationStack.length - 1]));
+            }
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            if (doType === "NONE" && loopType === "WHILE") {
+                code.push(tab() + `Loop While ${loopCondition}`);
+            } else if (doType === "NONE" && loopType === "UNTIL") {
+                code.push(tab() + `Loop Until ${loopCondition}`);
+            } else {
+                code.push(tab() + 'Loop');
+            }
+            code = code.join('\n') + '\n';
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['do_loop_simple'] = function (block) {
+            var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            var doType = block.getFieldValue('DO_TYPE');
+            var doCondition = sanitizeCondition(block.getFieldValue('DO_CONDITION'));
+            var loopType = block.getFieldValue('LOOP_TYPE');
+            var loopCondition = sanitizeCondition(block.getFieldValue('LOOP_CONDITION'));
+            var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
+            var code = [];
+            if (doType === "WHILE") {
+                code.push(tab() + `Do While ${doCondition}`);
+            } else if (doType === "UNTIL") {
+                code.push(tab() + `Do Until ${doCondition}`);
+            } else if (doType === "FOREVER") {
+                code.push(tab() + 'Do');
+            } else {
+                code.push(tab() + 'Do');
+            }
+            indentationStack[indentationStack.length - 1]++;
+            if (doCode.trim()) {
+                code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
+            } else {
+                code.push(tab() + '\' No DO_CODE provided');
+            }
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            if (doType === "NONE" && loopType === "WHILE") {
+                code.push(tab() + `Loop While ${loopCondition}`);
+            } else if (doType === "NONE" && loopType === "UNTIL") {
+                code.push(tab() + `Loop Until ${loopCondition}`);
+            } else {
+                code.push(tab() + 'Loop');
+            }
+            code = code.join('\n') + '\n';
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['do_loop_simplest'] = function (block) {
+            var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
+            var code = [];
+            code.push(tab() + 'Do');
+            indentationStack[indentationStack.length - 1]++;
+            if (doCode.trim()) {
+                code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
+            } else {
+                code.push(tab() + '\' No DO_CODE provided');
+            }
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            code.push(tab() + 'Loop');
+            code = code.join('\n') + '\n';
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['export_code'] = function (block) {
+            return `
+                        var code = Blockly.JavaScript.workspaceToCode(Blockly.getMainWorkspace());
+                        var blob = new Blob([code], { type: "text/plain" });
+                        var a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
+                        a.download = "generated_code.js";
+                        a.click();
+                    `;
+        };
+
+        Blockly.JavaScript.forBlock['get_variable'] = function (block) {
+            var varModel = block.getField('VAR_NAME').getVariable();
+            if (!varModel) {
+                console.warn(`⚠️ Variable model not found in block ID: ${block.id}`);
+                return ['UNKNOWN_VAR', Blockly.JavaScript.ORDER_ATOMIC];
+            }
+            var varName = varModel.name;
+            return [varName, Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        Blockly.JavaScript.forBlock['import_blocks'] = function (block) {
+            return `
+                        document.getElementById("fileInput").click();
+                        document.getElementById("fileInput").onchange = function(event) {
+                            var reader = new FileReader();
+                            reader.onload = function() {
+                                var xml = Blockly.Xml.textToDom(reader.result);
+                                Blockly.Xml.appendDomToWorkspace(xml, Blockly.getMainWorkspace());
+                            };
+                            reader.readAsText(event.target.files[0]);
+                        };
+                    `;
+        };
+
+        Blockly.JavaScript.forBlock['lcd_cls'] = function (block) {
+            code = tab() + `CLS\n`;
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['math_modulo'] = function (block) {
+            var a = Blockly.JavaScript.valueToCode(block, "A", Blockly.JavaScript.ORDER_ATOMIC) || "0";
+            var b = Blockly.JavaScript.valueToCode(block, "B", Blockly.JavaScript.ORDER_ATOMIC) || "1";
+            var code = a + " % " + b;
+            return [code, Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        Blockly.JavaScript.forBlock['math_number'] = function (block) {
+            var number = block.getFieldValue("NUMBER");
+            return [String(number), Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        Blockly.JavaScript.forBlock['math_odd_even'] = function (block) {
+            var number = Blockly.JavaScript.valueToCode(block, "NUMBER", Blockly.JavaScript.ORDER_ATOMIC) || "0";
+            var check = block.getFieldValue("CHECK");
+            var code = check === "ODD" ? "( " + number + " % 2 ) <> 0" : "( " + number + " % 2 ) = 0";
+            //var code = check === "ODD" ? number + " % 2 !== 0" : number + " % 2 === 0";
+            return [code, Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        Blockly.JavaScript.forBlock['math_operation'] = function (block) {
+            var a = Blockly.JavaScript.valueToCode(block, "A", Blockly.JavaScript.ORDER_ATOMIC) || "0";
+            var b = Blockly.JavaScript.valueToCode(block, "B", Blockly.JavaScript.ORDER_ATOMIC) || "0";
+            var operator = block.getFieldValue("OPERATOR");
+            var code = a + " " + operator + " " + b;
+            return [code, Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        Blockly.JavaScript.forBlock['numeric_variable'] = function (block) {
+            var varName = block.getFieldValue('VAR_NAME');
+            var varType = block.getFieldValue('VAR_TYPE');
+            var initialValue = block.getFieldValue('INITIAL_VALUE');
+            let outstring = tab() + `Dim ${varName} As ${varType}\n`;
+            indentationStack[indentationStack.length - 1]++;
+            outstring += tab() + `${varName} = ${initialValue}\n`;
+            indentationStack[indentationStack.length - 1]--;
+            return outstring;
+        };
+
+        Blockly.JavaScript.forBlock['open_project'] = function (block) {
+            return 'document.getElementById("fileInput").click();\n';
+        };
+
+        Blockly.JavaScript.forBlock['print_text'] = function (block) {
+            var text = block.getFieldValue('TEXT') || '';
+            var code = tab() + `Print ${text}\n`;
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['repeat_loop'] = function (block) {
+            var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            var repeatType = block.getFieldValue('REPEAT_TYPE');
+            var repeatCount = block.getFieldValue('REPEAT_COUNT');
+            var exitCondition = sanitizeCondition(block.getFieldValue('EXIT_CONDITION'));
+            var repeatCode = Blockly.JavaScript.statementToCode(block, 'REPEAT_CODE') || '';
+            var afterExitCode = Blockly.JavaScript.statementToCode(block, 'AFTER_EXIT_CODE') || '';
+            var code = [];
+            if (repeatType === "FOREVER") {
+                code.push(tab() + `Repeat`);
+            } else {
+                var validatedCount = sanitizeRepeatCount(repeatCount);
+                code.push(tab() + `Repeat ${validatedCount}`);
+            }
+            indentationStack[indentationStack.length - 1]++;
+            if (repeatCode.trim()) {
+                code.push(reformatCode(repeatCode, indentationStack[indentationStack.length - 1]));
+            } else {
+                code.push(tab() + '\' No REPEAT_CODE provided');
+            }
+            if (exitCondition && exitCondition !== 'true' && exitCondition !== 'false') {
+                code.push(tab() + `If ${exitCondition} Then Exit Repeat`);
+            } else if (exitCondition === 'true') {
+                code.push(tab() + 'Exit Repeat');
+            }
+            if (afterExitCode.trim()) {
+                code.push(reformatCode(afterExitCode, indentationStack[indentationStack.length - 1]));
+            }
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            code.push(tab() + 'End Repeat');
+            code = code.join('\n') + '\n';
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['repeat_loop_simple'] = function (block) {
+            var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            var repeatType = block.getFieldValue('REPEAT_TYPE');
+            var repeatCount = block.getFieldValue('REPEAT_COUNT');
+            var repeatCode = Blockly.JavaScript.statementToCode(block, 'REPEAT_CODE') || '';
+            var code = [];
+            if (repeatType === "FOREVER") {
+                code.push(tab() + `Repeat`);
+            } else {
+                var validatedCount = sanitizeRepeatCount(repeatCount);
+                code.push(tab() + `Repeat ${validatedCount}`);
+            }
+            indentationStack[indentationStack.length - 1]++;
+            if (repeatCode.trim()) {
+                code.push(reformatCode(repeatCode, indentationStack[indentationStack.length - 1]));
+            } else {
+                code.push(tab() + '\' No REPEAT_CODE provided');
+            }
+            indentationStack[indentationStack.length - 1] = currentIndent;
+            code.push(tab() + 'End Repeat');
+            code =  code.join('\n') + '\n';
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['reset_workspace'] = function (block) {
+            return `
+                        if (confirm("Are you sure you want to clear all blocks?")) {
+                            Blockly.getMainWorkspace().clear();
+                        }
+                    `;
+        };
+
+        Blockly.JavaScript.forBlock['save_project'] = function (block) {
+            return `
+                        var xml = Blockly.Xml.workspaceToDom(Blockly.getMainWorkspace());
+                        var xmlText = Blockly.Xml.domToText(xml);
+                        var blob = new Blob([xmlText], { type: "text/xml" });
+                        var a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
+                        a.download = "blockly_project.xml";
+                        a.click();
+                    `;
+        };
+
+        Blockly.JavaScript.forBlock['select_chip'] = function (block) {
+            try {
+                const chip = block.getFieldValue('CHIP');
+                const chipInfo = chipData.find(c => c.name === chip);
+                return `#chip ${chip}, ${chipInfo ? chipInfo.clock : 20}\n#option explicit\n\n`;
+            } catch (e) {
+                console.error('DEBUG: Error in select_chip generator:', e);
+                return '// Error in chip selection\n';
+            }
+        };
+
+        Blockly.JavaScript.forBlock['set_variable'] = function (block) {
+            var varModel = block.getField('VAR_NAME').getVariable();
+            if (!varModel) {
+                console.warn(`⚠️ Variable model not found in block ID: ${block.id}`);
+                return 'UNKNOWN_VAR = 0;\n';
+            }
+            var varName = varModel.name;
+            var value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ASSIGNMENT) || '0';
+            var code = tab() + `${varName} = ${value}\n`;
+            return formatComment(block, code, indentationStack);
+
+        };
+
+        Blockly.JavaScript.forBlock['string_variable'] = function (block) {
+            var varName = block.getFieldValue('VAR_NAME');
+            var length = block.getFieldValue('LENGTH');
+            var initialValue = Blockly.JavaScript.quote_(block.getFieldValue('INITIAL_VALUE'));
+            let trimmed = initialValue.trim();
+            if (trimmed.startsWith(`'"`) && trimmed.length > 1) {
+                trimmed = trimmed.substring(1);
+            }
+            if (trimmed.endsWith(`"'`) && trimmed.length > 1) {
+                trimmed = trimmed.substring(0, trimmed.length - 1);
+            }
+            if (trimmed.length > 1 && (!trimmed.startsWith(`"`) || !trimmed.endsWith(`"`))) {
+                logToWebPageErrors(`⚠️ String formatting issue: Expected starting and ending quote. Received: "${trimmed}\n"`, "ERROR");
+            }
+            if (trimmed.length === 1) {
+                logToWebPageErrors(`⚠️ String formatting issue: Expected starting and ending quote. Received: "${trimmed}\n"`, "ERROR");
+            }
+            var code = tab() + `Dim ${varName} As String * ${length}\n` + tab() + `${varName} = ${trimmed}\n`;
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['variable_block_group'] = function (block) {
+            var innerBlocksCode = Blockly.JavaScript.statementToCode(block, 'INNER_BLOCKS');
+            return `${innerBlocksCode}`;
+        };
+
+        Blockly.JavaScript.forBlock['wait_100ms'] = function (block) {
+            var code =  tab() + `wait 100 ms\n`;
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['wait_conditional'] = function (block) {
+            var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+            var mode = block.getFieldValue('MODE');
+            var code = tab() + `Wait ${mode} ${condition}\n`;
+            return formatComment(block, code, indentationStack);
+        };
+
+        Blockly.JavaScript.forBlock['wait_fixed'] = function (block) {
+            var value = Blockly.JavaScript.valueToCode(block, 'DELAY_VALUE', Blockly.JavaScript.ORDER_ATOMIC) || block.getFieldValue('VALUE');
+            var unit = block.getFieldValue('UNIT');
+
+            // Generate the base code line
+            var code = tab() + `Wait ${value} ${unit}\n`;
+
+            // Format comment and return
+            return formatComment(block, code, indentationStack);
+        };
+
+        // Other Functions
+        function clearConsole(e) {
+            if (e) e.stopPropagation();
+            var consoleDiv = document.getElementById("webpageconsole");
+            if (consoleDiv) {
+                consoleDiv.innerHTML = "";
+            }
+        }
+
+        function clearErrors(e) {
+            if (e) e.stopPropagation();
+            var errorDiv = document.getElementById("WebPageErrors");
+            if (errorDiv) {
+                errorDiv.innerHTML = "";
+            }
+        }
+
+        function copyConsole(e) {
+            if (e) e.stopPropagation();
+            try {
+                const consoleDiv = document.getElementById('webpageconsole');
+                const copyButton = document.getElementById('copyConsoleButton');
+                const consoleText = Array.from(consoleDiv.childNodes)
+                    .map(node => node.nodeType === Node.TEXT_NODE ? node.textContent : node.innerText)
+                    .join('\n');
+                navigator.clipboard.writeText(consoleText).then(() => {
+                    copyButton.textContent = 'Copied!';
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.textContent = 'Copy';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                }).catch(err => {
+                    console.warn('Clipboard API failed:', err);
+                    try {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = consoleText;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        copyButton.textContent = 'Copied!';
+                        copyButton.classList.add('copied');
+                        setTimeout(() => {
+                            copyButton.textContent = 'Copy';
+                            copyButton.classList.remove('copied');
+                        }, 2000);
+                    } catch (fallbackErr) {
+                        console.error('Failed to copy console content:', fallbackErr);
+                        copyButton.textContent = 'Copy Failed!';
+                        copyButton.classList.add('error');
+                        setTimeout(() => {
+                            copyButton.textContent = 'Copy';
+                            copyButton.classList.remove('error');
+                        }, 2000);
+                        logToWebPageErrors("Error: Failed to copy console content. Please select and copy manually.\n", "ERROR");
+                    }
+                });
+            } catch (e) {
+                console.error('Error in copyConsole:', e);
+                logToWebPageErrors("Error: Failed to copy console content due to script error.\n", "ERROR");
+            }
+        }
+
+        function exportCode() {
+            var code = Blockly.JavaScript.workspaceToCode(Blockly.getMainWorkspace());
+            var blob = new Blob([code], { type: "text/plain" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "generated_code.gcb";
+            a.click();
+        }
+
+        function filterChips() {
+            const searchText = document.getElementById('chipSearch').value.toLowerCase();
+            const select = document.getElementById('chipSelect');
+            for (let option of select.options) {
+                option.style.display = option.value.toLowerCase().includes(searchText) || option.value === "" ? "block" : "none";
+            }
+        }
+
+        function formatComment(block, code, indentationStack) {
+            var commentText = block.getCommentText();
+
+            if (commentText) {
+                // Strip all leading and trailing \n from the comment
+                commentText = commentText.replace(/^\n+/, '').replace(/\n+$/, '');
+
+                // Count the number of \n in the comment
+                var newlineCount = (commentText.match(/\n/g) || []).length;
+
+                if (newlineCount === 0) {
+                    // Single-line comment
+                    var formattedComment = `${tab()}// ${commentText}\n`;
+                    code = formattedComment + code;
+                } else {
+                    // Multi-line comment
+                    var currentIndentLevel = indentationStack[indentationStack.length - 1] || 0;
+
+                    var lines = commentText.split('\n');
+                    var formattedComment = `${tab()}/*\n`;
+                    indentationStack[indentationStack.length - 1] = currentIndentLevel + 1; // Increment tabcounter
+                    for (let i = 0; i < lines.length; i++) {
+                        if (i < lines.length - 1) {
+                            formattedComment += `${tab()}${lines[i]}\n`; // All lines except last with \n
+                        } else {
+                            formattedComment += `${tab()}${lines[i]}\n`; // Last line with \n
+                        }
+                    }
+                    formattedComment += `${tab()}*/\n`;
+                    indentationStack[indentationStack.length - 1] = currentIndentLevel; // Decrement tabcounter
+                    code = formattedComment + code;
+                }
+            }
+
+            return code;
+        }
+
+        function handleFileSelect(event) {
+            var file = event.target.files[0];
+            if (!file) {
+                console.error("No file selected!");
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    var xml = Blockly.utils.xml.textToDom(reader.result);
+                    Blockly.Xml.appendDomToWorkspace(xml, Blockly.getMainWorkspace());
+                    console.log("Blocks imported successfully!");
+                } catch (error) {
+                    console.error("Error parsing XML:", error);
+                    console.error("Received XML:", reader.result);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importBlocks() {
+            var fileInput = document.getElementById("fileInput");
+            if (!fileInput) {
+                console.error("File input not found!");
+                return;
+            }
+            fileInput.value = "";
+            fileInput.onchange = function (event) {
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        var xml = Blockly.utils.xml.textToDom(reader.result);
+                        var workspace = Blockly.getMainWorkspace();
+                        Blockly.Xml.appendDomToWorkspace(xml, workspace);
+                        console.log("Blocks successfully imported!");
+                    } catch (error) {
+                        console.error("Error importing XML:", error);
+                        console.error("Received XML:", reader.result);
+                    }
+                };
+                reader.readAsText(event.target.files[0]);
+            };
+            fileInput.click();
+        }
+
+        // added 0806
+        function loadDefaultXML() {
+            const fileUrl = new URL('my_blockly_project.xml', window.location.href).href;
+            console.log("Loading XML file from:", fileUrl);
+            fetch('my_blockly_project.xml')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}. Ensure myproject.xml is next to HTML solution and server allows access.`);
+                    }
+                    return response.text();
+                })
+                .then(xmlText => {
+                    try {
+                        const xml = Blockly.utils.xml.textToDom(xmlText);
+                        Blockly.Xml.domToWorkspace(xml, workspace);
+                        logToWebPageErrors("my_blockly_project.xml loaded successfully.\n");
+                        // Auto-zoom to fit all blocks after a short delay
+                        setTimeout(() => {
+                            workspace.zoomToFit();
+                            logToWebPageErrors("Workspace auto-zoomed to fit blocks.","INFO");
+                            Blockly.svgResize(workspace);
+                            workspace.resize();
+                        }, 200); // Delay to ensure blocks are rendered
+                    } catch (e) {
+                        logToWebPageErrors(`Error loading my_blockly_project.xml: ${e.message}\n`, "ERROR");
+                    }
+                })
+                .catch(error => {
+                    logToWebPageErrors(`Failed to fetch my_blockly_project.xml: ${error.message}\n`, "ERROR");
+                });
+        }
+
+
+        function makeDraggable(element) {
+            let isDragging = false;
+            let currentX, currentY, initialX, initialY;
+            let zIndex = 1;
+            const blocklyDiv = document.getElementById('blocklyDiv');
+            const blocklyRect = blocklyDiv.getBoundingClientRect();
+            const isError = element.querySelector('#WebPageErrors-header') !== null;
+            currentY = blocklyRect.bottom + 40;
+            currentX = isError ? 10 : 440;
+            element.style.position = 'absolute';
+            element.style.left = `${currentX}px`;
+            element.style.top = `${currentY}px`;
+            element.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'H3') {
+                    initialX = e.clientX - currentX;
+                    initialY = e.clientY - currentY;
+                    isDragging = true;
+                    element.style.zIndex = ++zIndex;
+                }
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    element.style.left = `${currentX}px`;
+                    element.style.top = `${currentY}px`;
+                }
+            });
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function newProject() {
+            Blockly.getMainWorkspace().clear();
+        }
+
+        function openProject() {
+            var fileInput = document.getElementById("fileInput");
+            if (!fileInput) {
+                console.error("Error: fileInput element is missing!");
+            } else {
+                fileInput.click();
+            }
+        }
+
+        function populateChipDropdown() {
+            const select = document.getElementById('chipSelect');
+            chipData.forEach(chip => {
+                let option = document.createElement('option');
+                option.value = chip.name;
+                option.textContent = `${chip.name} (${chip.clock} MHz)`;
+                select.appendChild(option);
+            });
+        }
+
+        function reformatCode(code, indentLevel) {
+            var lines = code.split('\n').filter(line => line.trim());
+            if (!lines.length) return tab(indentLevel) + '\' No code provided';
+            var minIndent = Math.min(...lines
+                .filter(line => line.trim())
+                .map(line => line.match(/^\s*/)[0].length / 4));
+            return lines
+                .map(line => {
+                    if (!line.trim()) return '';
+                    var lineIndent = (line.match(/^\s*/)[0].length / 4) - minIndent;
+                    return tab(indentLevel + lineIndent) + line.trim();
+                })
+                .filter(line => line)
+                .join('\n');
+        }
+
+        function resetWorkspace() {
+            if (confirm("Are you sure you want to clear all blocks?")) {
+                Blockly.getMainWorkspace().clear();
+                localStorage.setItem("username", "");
+            }
+        }
+
+        function runCode() {
+            if (!workspace) {
+                logToWebPageErrors("Error: Blockly workspace is not initialized!\n", "ERROR");
+                return;
+            }
+            clearConsole();
+            Blockly.JavaScript.init(workspace);
+            const today = new Date();
+            const formattedDate = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
+            var localuname = localStorage.getItem("username") || "";
+            if (localuname.trim() === "") {
+                localuname = prompt("Enter your username:");
+                localStorage.setItem("username", localuname);
+            }
+            let chipCode = '';
+            let code = '';
+            if (!Blockly.JavaScript.workspaceToCode(workspace).trim()) {
+                logToWebPageErrors("Error: No blocks in the workspace!\n", "WARNING");
+                return;
+            }
+            Blockly.JavaScript.init(workspace);
+            let chipProcessed = false;
+            const topBlocks = workspace.getTopBlocks(true);
+            for (let i = 0; i < topBlocks.length; i++) {
+                let block = topBlocks[i];
+                while (block && block.isEnabled()) {
+                    try {
+                        if (block.type === 'select_chip') {
+                            chipCode = Blockly.JavaScript.forBlock['select_chip'](block);
+                            chipProcessed = true;
+                        }
+                    } catch (e) {
+                        console.error(`DEBUG: Error in block ${block.type}: ${e.message}`);
+                        code += `// Error in block ${block.type}: ${e.message}\n`;
+                    }
+                    block = block.getNextBlock();
+                }
+                if (chipProcessed) {
+                    break;
+                }
+            }
+            if (!chipProcessed) {
+                console.error(`No chip specified`);
+                logToWebPageErrors("Error: No chip specified\n", "ERROR");
+                console.log("No Generated Code:\n");
+                return;
+            }
+            code = `/*
+        GCBASIC source generated by BLOCKLY.  An Open source code generator.
+
+       A GCBASIC source program
+
+*/
+// Date:    ${formattedDate}
+// Version: 0.9b
+// Author:  ${localuname}
+\n`;
+            code += chipCode;
+            var constantscode = "";
+            for (let i = 0; i < topBlocks.length; i++) {
+                let block = topBlocks[i];
+                function extractConstants(innerBlock) {
+                    while (innerBlock && innerBlock.isEnabled()) {
+                        try {
+                            if (innerBlock.type === 'define_constant') {
+                                constantscode += Blockly.JavaScript.forBlock['define_constant'](innerBlock);
+                            } else if (innerBlock.type === 'constant_block_group') {
+                                let childBlocks = innerBlock.getChildren ? innerBlock.getChildren() : [];
+                                for (let j = 0; j < childBlocks.length; j++) {
+                                    extractConstants(childBlocks[j]);
+                                }
+                            }
+                        } catch (e) {
+                            console.error(`DEBUG: Error in block ${innerBlock.type}: ${e.message}`);
+                        }
+                        innerBlock = innerBlock.getNextBlock();
+                    }
+                }
+                extractConstants(block);
+            }
+            if (constantscode.trim() !== "") {
+                code += '// Constants used\n';
+                code += constantscode;
+                code += "\n"
+            }
+            var variablescode = "";
+            for (let i = 0; i < topBlocks.length; i++) {
+                let block = topBlocks[i];
+                function extractVariables(innerBlock) {
+                    while (innerBlock && innerBlock.isEnabled()) {
+                        try {
+                            if (innerBlock.type === 'numeric_variable') {
+                                variablescode += Blockly.JavaScript.forBlock['numeric_variable'](innerBlock);
+                            } else if (innerBlock.type === 'variable_block_group') {
+                                let childBlocks = innerBlock.getChildren ? innerBlock.getChildren() : [];
+                                for (let j = 0; j < childBlocks.length; j++) {
+                                    extractVariables(childBlocks[j]);
+                                }
+                            }
+                        } catch (e) {
+                            console.error(`DEBUG: Error in block ${innerBlock.type}: ${e.message}`);
+                        }
+                        innerBlock = innerBlock.getNextBlock();
+                    }
+                }
+                extractVariables(block);
+            }
+            if (variablescode.trim() !== "") {
+                code += '// Global Numeric Variables used\n';
+                code += variablescode;
+                code += "\n"
+            }
+            var stringscode = "";
+            for (let i = 0; i < topBlocks.length; i++) {
+                let block = topBlocks[i];
+                function extractVariables(innerBlock) {
+                    while (innerBlock && innerBlock.isEnabled()) {
+                        try {
+                            if (innerBlock.type === 'string_variable') {
+                                stringscode += Blockly.JavaScript.forBlock['string_variable'](innerBlock);
+                            } else if (innerBlock.type === 'variable_block_group') {
+                                let childBlocks = innerBlock.getChildren ? innerBlock.getChildren() : [];
+                                for (let j = 0; j < childBlocks.length; j++) {
+                                    extractVariables(childBlocks[j]);
+                                }
+                            }
+                        } catch (e) {
+                            console.error(`DEBUG: Error in block ${innerBlock.type}: ${e.message}`);
+                        }
+                        innerBlock = innerBlock.getNextBlock();
+                    }
+                }
+                extractVariables(block);
+            }
+            if (stringscode.trim() !== "") {
+                code += '// Global String Variables used\n';
+                code += stringscode;
+                code += "\n"
+            }
+            code += '\n// Main Program Commences Here \n\n';
+            for (let i = 0; i < topBlocks.length; i++) {
+                let block = topBlocks[i];
+                while (block && block.isEnabled()) {
+                    try {
+                        if (block.type !== 'select_chip' && block.type !== 'numeric_variable' && block.type !== 'define_constant' && block.type !== 'variable_block_group' && block.type !== 'constant_block_group' && Blockly.JavaScript.forBlock[block.type]) {
+                            const blockCode = Blockly.JavaScript.forBlock[block.type](block);
+                            code += blockCode;
+                        }
+                    } catch (e) {
+                        console.error(`DEBUG: Error in block ${block.type}: ${e.message}`);
+                        code += `// Error in block ${block.type}: ${e.message}\n`;
+                    }
+                    block = block.getNextBlock();
+                }
+            }
+            var numberedCode = code.split('\n').map((line, i) => `${i + 1}: ${line}`).join('\n');
+            logToWebpageConsole(code);
+        }
+
+
+        function saveProject() {
+            let filename = prompt("Enter filename:", "my_blockly_project.xml");
+            if (!filename) {
+                console.log("Save operation canceled.");
+                return;
+            }
+            const savedFiles = JSON.parse(localStorage.getItem("savedFiles") || "[]");
+            if (savedFiles.includes(filename)) {
+                const confirmOverwrite = confirm(`"${filename}" already exists. Do you want to overwrite it?`);
+                if (!confirmOverwrite) {
+                    console.log("User canceled overwrite.");
+                    return;
+                }
+            }
+            var xml = Blockly.Xml.workspaceToDom(Blockly.getMainWorkspace());
+            var xmlText = Blockly.Xml.domToText(xml);
+            var blob = new Blob([xmlText], { type: "text/xml" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            savedFiles.push(filename);
+            localStorage.setItem("savedFiles", JSON.stringify(savedFiles));
+            console.log(`File "${filename}" saved successfully.`);
+        }
+
+        async function saveProjectOS() {
+            const options = {
+                suggestedName: "my_blockly_project.xml",
+                types: [{ description: "XML Files", accept: { "text/xml": [".xml"] } }]
+            };
+            const handle = await window.showSaveFilePicker(options);
+            const writable = await handle.createWritable();
+            await writable.write("Your file content here");
+            await writable.close();
+            console.log("File saved!");
+        }
+
+        function sanitizeCondition(condition) {
+            if (!condition || condition.trim() === '') {
+                logToWebPageErrors('Empty condition, defaulting to "true"', "WARNING");
+                return 'true';
+            }
+            const validGCBBASICPattern = /^[a-zA-Z0-9_\s]+(\s*(=|<>|<|>|<=|>=)\s*[a-zA-Z0-9_\s]+)*$/;
+            if (!validGCBBASICPattern.test(condition)) {
+                logToWebPageErrors(`Invalid GCBBASIC condition: "${condition}", defaulting to "true"`, "ERROR");
+                return 'true';
+            }
+            return condition;
+        }
+
+        function sanitizeRepeatCount(count) {
+            var num = Math.floor(Number(count));
+            if (isNaN(num) || num < 0) {
+                logToWebPageErrors(`Invalid repeat count "${count}", defaulting to 0`, "WARNING");
+                return 0;
+            }
+            if (num > 65535) {
+                logToWebPageErrors(`Repeat count "${count}" exceeds maximum 65535, capping at 65535\n`, "WARNING");
+                return 65535;
+            }
+            return num;
+        }
+
+        function tab(indentLevel) {
+            return '    '.repeat(indentLevel || indentationStack[indentationStack.length - 1] || 0);
+        }
+
+        function tightCleanup(workspace) {
+            workspace.cleanUp();
+            let blocks = workspace.getTopBlocks(true);
+            let yPosition = 5;
+            let xPosition = 5;
+            let yOverset = 5;
+            blocks.forEach(block => {
+                const blockHeight = block.getHeightWidth().height;
+                block.xy_ = { x: xPosition, y: yPosition };
+                block.moveTo(block.xy_);
+                yPosition += blockHeight + yOverset;
+            });
+            workspace.render();
+            console.log("Precise Cleanup applied with Y overset:", yOverset);
+        }
+
+        function toggleGrid() {
+            gridVisible = !gridVisible;
+            const button = document.getElementById('toggleGridButton');
+            button.textContent = `Toggle Grid (${gridVisible ? 'On' : 'Off'})`;
+
+            // Save workspace state as XML
+            const xmlDom = Blockly.Xml.workspaceToDom(workspace);
+            const xmlText = Blockly.Xml.domToText(xmlDom);
+            logToWebPageErrors(`Saved XML state\n`,"INFO"); // Debug log
+
+            // Reinitialize workspace with updated grid settings
+            const blocklyDiv = document.getElementById('blocklyDiv');
+            const originalScroll = blocklyDiv.scrollTop; // Save scroll position
+            const originalWidth = blocklyDiv.style.width;
+            const originalHeight = blocklyDiv.style.height;
+            blocklyDiv.innerHTML = ''; // Clear the div
+            workspace.dispose(); // Dispose of the current workspace
+
+            // Re-inject workspace with new grid settings
+            workspace = Blockly.inject('blocklyDiv', {
+                toolbox: document.getElementById('toolbox'),
+                grid: {
+                    spacing: 10,
+                    length: gridVisible ? 2 : 0, // Toggle grid length between 2 (visible) and 0 (hidden)
+                    colour: '#ccc',
+                    snap: true
+                },
+                zoom: {
+                    controls: true,
+                    wheel: true,
+                    startScale: 1.0,
+                    maxScale: 3,
+                    minScale: 0.3,
+                    scaleSpeed: 1.2
+                },
+                move: {
+                    scrollbars: true,
+                    drag: true
+                }
+            });
+            logToWebPageErrors("Workspace reinitialized.\n","INFO"); // Debug log
+
+            // Restore workspace state from XML after ensuring workspace is ready
+            setTimeout(() => {
+                try {
+                    const restoredXml = Blockly.utils.xml.textToDom(xmlText); // Correct method
+                    Blockly.Xml.domToWorkspace(restoredXml, workspace); // Load XML into workspace
+                    logToWebPageErrors("XML restored to workspace."); // Debug log
+                } catch (error) {
+                    logToWebPageErrors(`Error restoring XML: ${error.message}\n`, "ERROR");
+                    console.error("XML Restoration Error:", error, "XML:", xmlText);
+                    return; // Stop execution if restoration fails
+                }
+                // Restore scroll position and dimensions
+                blocklyDiv.scrollTop = originalScroll;
+                blocklyDiv.style.width = originalWidth;
+                blocklyDiv.style.height = originalHeight;
+                document.getElementById('runButton').disabled = false;
+                //setTimeout(() => {
+                //    Blockly.svgResize(workspace);
+                //    workspace.resize();
+                //    logToWebPageErrors("Workspace resized.\n","INFO"); // Debug log
+                //}, 100);
+            }, 200); // Delay to ensure workspace is ready
+        }
+
+        // Override the scrub_ function that handles comments
+        Blockly.JavaScript.scrub_ = function (block, code) {
+            var nextBlock = block.nextConnection && block.nextConnection.targetBlock();
+            var nextCode = Blockly.JavaScript.blockToCode(nextBlock);
+            return code + nextCode; // Remove comment insertion here
+        }
+
+        function handleFileSelect(event) {
+            var file = event.target.files[0];
+            if (!file) {
+                console.error("No file selected!");
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    var xml = Blockly.utils.xml.textToDom(reader.result);
+                    Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, workspace); // Clear and load with comments
+                    console.log("Blocks and comments imported successfully!");
+                } catch (error) {
+                    console.error("Error parsing XML:", error);
+                    console.error("Received XML:", reader.result);
+                    logToWebPageErrors(`Error loading file: ${error.message}\n`, "ERROR");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        //function xhandleFileSelect(event) {
+        //    var file = event.target.files[0];
+        //    var reader = new FileReader();
+        //    reader.onload = function () {
+        //        var xml = Blockly.utils.xml.textToDom(reader.result);
+        //        Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, Blockly.getMainWorkspace());
+        //    };
+        //    reader.readAsText(file);
+        //}
+
+
+        // Remove this function entirely
+        // function populateChipDropdown() { ... }
+
+        window.onload = () => {
+            console.log("Initializing Blockly workspace...");
+            try {
+                workspace = Blockly.inject('blocklyDiv', {
+                    toolbox: document.getElementById('toolbox'),
+                    comments: true,
+                    grid: {
+                        spacing: 10,
+                        length: 2,
+                        colour: '#ccc',
+                        snap: true
+                    },
+                    zoom: {
+                        controls: true,
+                        wheel: true,
+                        startScale: 1.0,
+                        maxScale: 3,
+                        minScale: 0.3,
+                        scaleSpeed: 1.2
+                    },
+                    move: {
+                        scrollbars: true,
+                        drag: true,
+                        comments: true
+                    }
+                });
+                document.getElementById('runButton').disabled = false;
+                document.getElementById('toggleGridButton').textContent = 'Toggle Grid (On)';
+
+                setTimeout(() => {
+                    const blocklyDiv = document.getElementById('blocklyDiv');
+                    const gridSize = 10;
+                    new ResizeObserver(() => {
+                        const width = blocklyDiv.offsetWidth;
+                        const height = blocklyDiv.offsetHeight;
+                        const snappedWidth = Math.round(width / gridSize) * gridSize;
+                        const snappedHeight = Math.round(height / gridSize) * gridSize;
+                        blocklyDiv.style.width = `${snappedWidth}px`;
+                        blocklyDiv.style.height = `${snappedHeight}px`;
+                        Blockly.svgResize(workspace);
+                    }).observe(blocklyDiv);
+                    Blockly.svgResize(workspace);
+                    workspace.resize();
+                }, 100);
+
+                loadDefaultXML();
+            } catch (error) {
+                console.error("Error initializing Blockly:", error);
+                logToWebPageErrors(`Error: Blockly initialization failed: ${error.message}\n`, "ERROR");
+            }
+            if (workspace) {
+                workspace.addChangeListener(event => {
+                    if (event.type === Blockly.Events.BLOCK_CREATE) {
+                        var block = workspace.getBlockById(event.blockId);
+                        if (block && (block.type === 'get_variable' || block.type === 'set_variable')) {
+                            var varName = "myVar";
+                            var exists = workspace.getAllBlocks().some(b =>
+                                b.type === 'numeric_variable' && b.getFieldValue("VAR_NAME") === varName
+                            );
+                            if (!exists) {
+                                var newBlock = workspace.newBlock('numeric_variable');
+                                newBlock.setFieldValue(varName, "VAR_NAME");
+                                newBlock.initSvg();
+                                newBlock.render();
+                                newBlock.moveBy(100, 100);
+                            }
+                        }
+                    }
+                });
+                workspace.addChangeListener(function (event) {
+                    var affectedBlock = workspace.getBlockById(event.blockId);
+                    if (affectedBlock) {
+                        var parentBlock = affectedBlock.getSurroundParent();
+                        if (parentBlock && parentBlock.type === 'constant_block_group') {
+                            let ejectedBlocks = [];
+                            let invalidBlock = null;
+                            let childBlock = parentBlock.getInputTargetBlock('INNER_BLOCKS');
+                            while (childBlock) {
+                                if (childBlock.type === "define_constant") {
+                                    ejectedBlocks.push(childBlock);
+                                } else {
+                                    invalidBlock = childBlock;
+                                }
+                                childBlock = childBlock.getNextBlock() ? childBlock.getNextBlock() : null;
+                            }
+                            if (ejectedBlocks.length > 0) {
+                                let firstBlock = ejectedBlocks[0];
+                                parentBlock.getInputTargetBlock('INNER_BLOCKS').nextConnection.connect(firstBlock.previousConnection);
+                                let previousBlock = firstBlock;
+                                for (let i = 1; i < ejectedBlocks.length; i++) {
+                                    previousBlock.nextConnection.connect(ejectedBlocks[i].previousConnection);
+                                    previousBlock = ejectedBlocks[i];
+                                }
+                            }
+                            if (invalidBlock) {
+                                logToWebPageErrors(`⚠️ Removing non Constant block from group: Type = ${invalidBlock.type}\n`, "WARNING");
+                                let groupPos = parentBlock.getRelativeToSurfaceXY();
+                                let groupX = isNaN(groupPos.x) ? 50 : groupPos.x;
+                                let groupY = isNaN(groupPos.y) ? 50 : groupPos.y;
+                                let workspace = Blockly.getMainWorkspace();
+                                let workspaceScale = workspace.scale;
+                                let adjustedX = (groupX - 60) / workspaceScale;
+                                let adjustedY = (groupY - 40) / workspaceScale;
+                                invalidBlock.unplug();
+                                invalidBlock.translate(adjustedX, adjustedY);
+                                const svgGroup = invalidBlock.getSvgRoot();
+                                if (svgGroup && svgGroup.parentNode) {
+                                    svgGroup.parentNode.appendChild(svgGroup);
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.error("Blockly workspace is not initialized yet!");
+            }
+            makeDraggable(document.querySelector("#consoleContainer > div:first-child"));
+            makeDraggable(document.querySelector("#consoleContainer > div:last-child"));
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "F5" || event.keyCode === 116) {
+                    event.preventDefault();
+                    logToWebPageErrors("⚠️ Refresh disabled during Blockly session.\n", "WARNING");
+                }
+            });
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "F6" || event.keyCode === 117) {
+                    event.preventDefault();
+                    runCode();
+                    logToWebPageErrors("Generated code via F6 key.\n");
+                }
+            });
+            // Removed populateChipDropdown call and related logic
+        }        
+        //// Window Onload and Event Listeners
+        //window.onload = () => {
+        //    console.log("Initializing Blockly workspace...");
+        //    try {
+
+        //        //console.log(Object.keys(Blockly).filter(key =>
+        //        //    Blockly[key] && typeof Blockly[key] === 'object' &&
+        //        //    Blockly[key].blockToCode
+        //        //));
+
+        //        //console.log("Registered blocks:", Object.keys(Blockly.Blocks));
+
+        //        workspace = Blockly.inject('blocklyDiv', {
+        //            toolbox: document.getElementById('toolbox'),
+        //            grid: {
+        //                spacing: 10,   // Reduced spacing for subtlety
+        //                length: 2,     // Smaller grid crosses
+        //                colour: '#ccc',// Lighter color for less prominence
+        //                snap: true     // Enables snapping to grid
+        //            },
+        //            zoom: {
+        //                controls: true, // Enables zoom controls
+        //                wheel: true,    // Enables zoom with mouse wheel
+        //                startScale: 1.0,// Initial zoom scale
+        //                maxScale: 3,    // Maximum zoom scale
+        //                minScale: 0.3,  // Minimum zoom scale
+        //                scaleSpeed: 1.2 // Speed of zoom
+        //            },
+        //            move: {
+        //                scrollbars: true, // Ensures scrollbars are enabled
+        //                drag: true       // Allows dragging the workspace
+        //            }
+        //        });
+        //        document.getElementById('runButton').disabled = false;
+        //        document.getElementById('toggleGridButton').textContent = 'Toggle Grid (On)'; // Set initial button text
+
+        //        // Ensure workspace is fully rendered before resizing
+        //        setTimeout(() => {
+        //            const blocklyDiv = document.getElementById('blocklyDiv');
+        //            const gridSize = 10; // Match grid spacing
+        //            new ResizeObserver(() => {
+        //                const width = blocklyDiv.offsetWidth;
+        //                const height = blocklyDiv.offsetHeight;
+        //                const snappedWidth = Math.round(width / gridSize) * gridSize;
+        //                const snappedHeight = Math.round(height / gridSize) * gridSize;
+        //                blocklyDiv.style.width = `${snappedWidth}px`;
+        //                blocklyDiv.style.height = `${snappedHeight}px`;
+        //                Blockly.svgResize(workspace);
+        //            }).observe(blocklyDiv);
+        //            Blockly.svgResize(workspace); // Force initial render
+        //            workspace.resize(); // Explicitly trigger resize to ensure grid renders
+        //        }, 100); // Small delay to ensure DOM is ready
+
+        //        loadDefaultXML();
+        //    } catch (error) {
+        //        console.error("Error initializing Blockly:", error);
+        //        logToWebPageErrors(`Error: Blockly initialization failed: ${error.message}\n`, "ERROR");
+        //    }
+        //    if (workspace) {
+        //        workspace.addChangeListener(event => {
+        //            if (event.type === Blockly.Events.BLOCK_CREATE) {
+        //                var block = workspace.getBlockById(event.blockId);
+        //                if (block && (block.type === 'get_variable' || block.type === 'set_variable')) {
+        //                    var varName = "myVar";
+        //                    var exists = workspace.getAllBlocks().some(b =>
+        //                        b.type === 'numeric_variable' && b.getFieldValue("VAR_NAME") === varName
+        //                    );
+        //                    if (!exists) {
+        //                        var newBlock = workspace.newBlock('numeric_variable');
+        //                        newBlock.setFieldValue(varName, "VAR_NAME");
+        //                        newBlock.initSvg();
+        //                        newBlock.render();
+        //                        newBlock.moveBy(100, 100);
+        //                    }
+        //                }
+        //            }
+        //        });
+        //        workspace.addChangeListener(function (event) {
+        //            var affectedBlock = workspace.getBlockById(event.blockId);
+        //            if (affectedBlock) {
+        //                var parentBlock = affectedBlock.getSurroundParent();
+        //                if (parentBlock && parentBlock.type === 'constant_block_group') {
+        //                    let ejectedBlocks = [];
+        //                    let invalidBlock = null;
+        //                    let childBlock = parentBlock.getInputTargetBlock('INNER_BLOCKS');
+        //                    while (childBlock) {
+        //                        if (childBlock.type === "define_constant") {
+        //                            ejectedBlocks.push(childBlock);
+        //                        } else {
+        //                            invalidBlock = childBlock;
+        //                        }
+        //                        childBlock = childBlock.getNextBlock() ? childBlock.getNextBlock() : null;
+        //                    }
+        //                    if (ejectedBlocks.length > 0) {
+        //                        let firstBlock = ejectedBlocks[0];
+        //                        parentBlock.getInputTargetBlock('INNER_BLOCKS').nextConnection.connect(firstBlock.previousConnection);
+        //                        let previousBlock = firstBlock;
+        //                        for (let i = 1; i < ejectedBlocks.length; i++) {
+        //                            previousBlock.nextConnection.connect(ejectedBlocks[i].previousConnection);
+        //                            previousBlock = ejectedBlocks[i];
+        //                        }
+        //                    }
+        //                    if (invalidBlock) {
+        //                        logToWebPageErrors(`⚠️ Removing non Constant block from group: Type = ${invalidBlock.type}\n`, "WARNING");
+        //                        let groupPos = parentBlock.getRelativeToSurfaceXY();
+        //                        let groupX = isNaN(groupPos.x) ? 50 : groupPos.x;
+        //                        let groupY = isNaN(groupPos.y) ? 50 : groupPos.y;
+        //                        let workspace = Blockly.getMainWorkspace();
+        //                        let workspaceScale = workspace.scale;
+        //                        let adjustedX = (groupX - 60) / workspaceScale;
+        //                        let adjustedY = (groupY - 40) / workspaceScale;
+        //                        invalidBlock.unplug();
+        //                        invalidBlock.translate(adjustedX, adjustedY);
+        //                        const svgGroup = invalidBlock.getSvgRoot();
+        //                        if (svgGroup && svgGroup.parentNode) {
+        //                            svgGroup.parentNode.appendChild(svgGroup);
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        });
+        //    } else {
+        //        console.error("Blockly workspace is not initialized yet!");
+        //    }
+        //    makeDraggable(document.querySelector("#consoleContainer > div:first-child"));
+        //    makeDraggable(document.querySelector("#consoleContainer > div:last-child"));
+
+        //    // Hook F5 key 
+        //    document.addEventListener("keydown", function (event) {
+        //        if (event.key === "F5" || event.keyCode === 116) {
+        //            event.preventDefault();
+        //            logToWebPageErrors("⚠️ Refresh disabled during Blockly session.\n", "WARNING");
+        //        }
+        //    });
+
+        //    // Hook F6 key to Generate Code button
+        //    document.addEventListener("keydown", function (event) {
+        //        if (event.key === "F6" || event.keyCode === 117) {
+        //            event.preventDefault(); // Prevent default browser behavior
+        //            runCode(); // Call the Generate Code function
+        //            logToWebPageErrors("Generated code via F6 key.\n"); // Optional feedback
+        //        }
+        //    });
+
+        //    populateChipDropdown();
+
+
+
+        //};
+
+        Blockly.ContextMenuRegistry.registry.register({
+            id: 'tight_cleanup',
+            weight: 100,
+            preconditionFn: function () {
+                return 'enabled';
+            },
+            callback: function () {
+                tightCleanup(Blockly.getMainWorkspace());
+            },
+            scopeType: Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+            displayText: "Tight Cleanup",
+        });
+
+        const chipData = [
+            { name: '10F200', clock: 4 },
+            { name: '10F202', clock: 4 },
+            { name: '16F88', clock: 20 },
+            { name: '16F877A', clock: 20 },
+            { name: '16F1822', clock: 32 },
+            { name: '18F2550', clock: 48 },
+            { name: '18F4520', clock: 40 },
+            { name: '18F25K22', clock: 64 }
+        ];
+
+        function logToWebPageErrors(message, messageType = "INFO") {
+            var errorDiv = document.getElementById("WebPageErrors");
+            if (!errorDiv) {
+                console.error("Error: WebPageErrors div not found!");
+                return;
+            }
+            var newMessage = document.createElement("span");
+            newMessage.style.fontFamily = "monospace";
+            switch (messageType.toUpperCase()) {
+                case "WARNING":
+                    newMessage.style.color = "green";
+                    break;
+                case "ERROR":
+                    console.error(`Writing to webpage errors [${messageType}]:`, message);
+                    newMessage.style.color = "red";
+                    break;
+                case "INFO":
+                default:
+                    newMessage.style.color = "black";
+                    break;
+            }
+            // Ensure the last character is \n if not already present
+            let formattedMessage = String(message);
+            if (formattedMessage.charAt(formattedMessage.length - 1) !== '\n') {
+                formattedMessage += '\n';
+            }
+            newMessage.innerHTML = formattedMessage.replace(/\r?\n/g, "<br>");
+            errorDiv.appendChild(newMessage);
+            errorDiv.style.display = "block";
+            errorDiv.scrollTop = errorDiv.scrollHeight;
+        }
+
+        function logToWebpageConsole(message, messageType = "INFO") {
+            var consoleDiv = document.getElementById("webpageconsole");
+            if (!consoleDiv) {
+                console.error("Error: Webpage console div not found!");
+                logToWebPageErrors("Error: Webpage console div not found!\n", "ERROR");
+                return;
+            }
+            var newMessage = document.createElement("span");
+            newMessage.style.fontFamily = "monospace";
+            newMessage.style.color = "black";
+            // Ensure the last character is \n if not already present
+            let formattedMessage = String(message);
+            if (formattedMessage.charAt(formattedMessage.length - 1) !== '\n') {
+                formattedMessage += '\n';
+            }
+            newMessage.innerHTML = formattedMessage.replace(/\r?\n/g, "<br>");
+            consoleDiv.appendChild(newMessage);
+            consoleDiv.style.display = "block";
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch('changelog.txt')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}. Ensure changelog.txt is next to HTML and server allows access.`);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    // Find the first occurrence of "# Version" and extract the version number
+                    const versionMatch = text.match(/^# Version\s+(.*)$/m);
+                    if (!versionMatch) {
+                        console.warn("No version found in changelog.txt");
+                        return;
+                    }
+
+                    const currentVersion = versionMatch[1].trim(); // Extracted version
+                    const lastVersion = localStorage.getItem("lastVersion");
+
+                    if (currentVersion !== lastVersion) {
+                        showPopup(text); // Display formatted changelog
+                        localStorage.setItem("lastVersion", currentVersion); // Store new version
+                    } else {
+                        console.log("Changelog version matches last seen version:", currentVersion);
+                    }
+                })
+                .catch(error => {
+                    console.error("Failed to fetch changelog.txt:", error.message);
+                });
+        });
+
+        function showPopup(markdownText) {
+            const popup = document.createElement("div");
+            popup.style.position = "fixed";
+            popup.style.top = "10px";
+            popup.style.left = "50%";
+            popup.style.transform = "translateX(-50%)";
+            popup.style.width = "60%";
+            popup.style.maxWidth = "800px";
+            popup.style.height = "auto";
+            popup.style.padding = "20px";
+            popup.style.background = "white";
+            popup.style.border = "2px solid black";
+            popup.style.boxShadow = "0px 4px 8px rgba(0, 0, 0, 0.2)";
+            popup.style.overflowY = "auto"; // Enables vertical scrolling
+            popup.style.maxHeight = "480px"; // Limits height, ensuring scrollability
+            popup.style.zIndex = "1000";
+
+            // Convert Markdown to HTML using Marked.js
+            const contentDiv = document.createElement("div");
+            contentDiv.innerHTML = marked.parse(markdownText);
+            popup.appendChild(contentDiv);
+
+            // Create and position OK button at the top-right
+            const okButton = document.createElement("button");
+            okButton.textContent = "OK";
+            okButton.style.position = "absolute";
+            okButton.style.top = "10px";
+            okButton.style.right = "10px";
+            okButton.style.padding = "5px 10px";
+            okButton.style.background = "#007bff";
+            okButton.style.color = "white";
+            okButton.style.border = "none";
+            okButton.style.cursor = "pointer";
+            okButton.style.display = "none"; // Initially hidden
+
+            okButton.onclick = () => document.body.removeChild(popup);
+            popup.appendChild(okButton);
+
+            document.body.appendChild(popup);
+
+            // Show OK button after 5 seconds
+            setTimeout(() => {
+                okButton.style.display = "block";
+            }, 5000);
+        }
+
+
+    </script>
+</body>
+</html>

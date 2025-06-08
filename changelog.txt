@@ -1,0 +1,24 @@
+**Bug Tracking and enhancements - please use this link:**  
+<a href="https://github.com/GreatCowBASIC/Blockly/issues" target="_blank">Report an Issue and request an enhancement</a>
+
+**Discussions - please use this link:**  
+<a href="https://github.com/GreatCowBASIC/Blockly/discussions/" target="_blank">GCBASIC Blockly discussion</a>
+
+
+---
+# Version 06.08.2025.0E
+- Implement changlog
+- Implement changelog popup with version control
+- Removed the errant dropdown at the bottom of the page
+- Implement comments.  Blocks can have comments added. These commments, when appropiate, are formatted and added to the GCBASIC.  Very hard to implement.  If you think other Blocks need the comments exposing - just ask.
+- Blocks that are not fully suportted have been hidden
+- Loading XML with comments now supported
+- The wait command is eveb smarter. Variables can be disabled)
+
+# Version 06.07.2025.02
+- The wait command is now smarter. For the delay value: You can input a constant value, or, you can use a variable ( this variable can nbe disabled).  Need to add numeric constants to this as an option.
+- Zoom and auto position added
+- Grid conrtol
+
+# Version 06.06.2025.01 
+- Alpha release
