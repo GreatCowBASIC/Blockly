@@ -17,6 +17,8 @@ Welcome to **GCBASIC Blockly**, an open-source project that integrates the Block
 
 ## Getting Started
 
+https://gcbasic.com/GCBASIC_Blockly.html?dl=1
+
 ### Prerequisites
 - A modern web browser (e.g., Chrome, Firefox, Edge).
 - A local web server (e.g., Python’s `http.server` or Node.js) to serve the HTML file.
