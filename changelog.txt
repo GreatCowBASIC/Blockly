@@ -8,16 +8,16 @@
 
 <a href="https://sourceforge.net/p/gcbasic/discussion/579125/thread/8d2ae500e0/?limit=25#327e/c200/76d0/d13c" target="_blank">GCBASIC Forum discussion</a>
 
-To install a local copy of GCBASIC Blockly -  <a href="https://www.gcbasic.com/GCBASIC_Blocky_Guide.html" target="_blank">follow this guide</a>
+To install a local copy of GCBASIC Blockly -  <a href="https://www.gcbasic.com/GCBASIC_Blockly_Guide.html" target="_blank">follow this guide</a>
 
-To download example GCBASIC Blockly projects - <a href="https://www.gcbasic.com/GCBASIC_Blocky_Demos.html" target="_blank">see the download page</a>
+To download example GCBASIC Blockly projects - <a href="https://www.gcbasic.com/GCBASIC_Blockly_Demos.html" target="_blank">see the download page</a>
 
-Direct access to other online demonstrations - <a href="https://www.gcbasic.com/GCBASIC_Blocky_Examples.html" target="_blank">see the example guide</a>
+Direct access to other online demonstrations - <a href="https://www.gcbasic.com/GCBASIC_Blockly_Examples.html" target="_blank">see the example guide</a>
 
 ---
 
-# Version 06.14.2025.01
-- Add example guide
+# Version 06.14.2025.04
+- Add example guide via a dynamic webpage
 - Changed Decorative text block to have no connections.
 
 

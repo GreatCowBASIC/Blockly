@@ -62,12 +62,12 @@
 <body>
     <header>
         <h1>GCBASIC for Blockly Demos</h1>
-        <p>Explore our collection of GCBASIC for Blockly demo projects in XML format</p>
+        <p>Explore the collection of GCBASIC for Blockly demo projects in XML format</p>
     </header>
     <div class="container">
         <h2>Available Demos</h2>
         <p id="loading" class="loading">Loading demos...</p>
-        <p id="error" class="error" style="display: none;">Failed to load demos. Please try again later.</p>
+        <p id="error" class="error" style="display: none;"></p>
         <ul id="demo-list"></ul>
     </div>
     <script>
@@ -76,38 +76,55 @@
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
 
-            try {
-                // Fetch list of XML files from the examples folder
-                const response = await fetch('/api/demos');
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const demoFiles = await response.json();
+            const directoryUrl = 'https://www.gcbasic.com/examples/';
 
-                // Filter for XML files and populate the list
-                demoFiles.forEach(file => {
-                    if (file.endsWith('.xml')) {
-                        const listItem = document.createElement('li');
-                        const link = document.createElement('a');
-                        // Construct the URL with the XML filename
-                        link.href = `https://www.gcbasic.com/GCBASIC_Blockly.html?xml=${file}`;
-                        link.textContent = file;
-                        listItem.appendChild(link);
-                        demoList.appendChild(listItem);
-                    }
+            try {
+                const response = await fetch(directoryUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'text/html' }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('text/html')) {
+                    throw new Error(`Expected HTML, received ${contentType || 'unknown content type'}.`);
+                }
+
+                const html = await response.text();
+
+                // Parse HTML to extract .xml files
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const links = doc.querySelectorAll('a');
+                const xmlFiles = Array.from(links)
+                    .map(link => link.getAttribute('href'))
+                    .filter(href => href && href.toLowerCase().endsWith('.xml'))
+                    .map(href => decodeURIComponent(href.replace(/^\/examples\//, ''))) // Remove /examples/ prefix if present
+                    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())); // Sort alphabetically (case-insensitive)
+
+                if (xmlFiles.length === 0) {
+                    throw new Error('No XML files found in the examples folder.');
+                }
+
+                // Populate the list with sorted XML files
+                xmlFiles.forEach(file => {
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = `https://www.gcbasic.com/GCBASIC_Blockly.html?xml=examples/${encodeURIComponent(file)}`;
+                    link.textContent = file;
+                    listItem.appendChild(link);
+                    demoList.appendChild(listItem);
                 });
 
                 // Hide loading message
                 loading.style.display = 'none';
-
-                // Show error if no XML files found
-                if (demoList.children.length === 0) {
-                    error.textContent = 'No XML demo files found in the examples folder.';
-                    error.style.display = 'block';
-                }
             } catch (err) {
-                console.error('Error fetching demo files:', err);
+                console.error('Error fetching demo files:', err.message);
                 loading.style.display = 'none';
+                error.textContent = `Failed to load demos: ${err.message}. Ensure the server allows CORS and the examples folder contains XML files.`;
                 error.style.display = 'block';
             }
         }
