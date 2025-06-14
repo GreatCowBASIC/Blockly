@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCBASIC for Blockly Demos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        header p {
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background-color: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        li a {
+            text-decoration: none;
+            color: #2980b9;
+            font-weight: bold;
+        }
+        li a:hover {
+            color: #e74c3c;
+        }
+        .error {
+            color: #e74c3c;
+            text-align: center;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GCBASIC for Blockly Demos</h1>
+        <p>Explore our collection of GCBASIC for Blockly demo projects in XML format</p>
+    </header>
+    <div class="container">
+        <h2>Available Demos</h2>
+        <p id="loading" class="loading">Loading demos...</p>
+        <p id="error" class="error" style="display: none;">Failed to load demos. Please try again later.</p>
+        <ul id="demo-list"></ul>
+    </div>
+    <script>
+        async function loadDemoFiles() {
+            const demoList = document.getElementById('demo-list');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+
+            try {
+                // Fetch list of XML files from the examples folder
+                const response = await fetch('/api/demos');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const demoFiles = await response.json();
+
+                // Filter for XML files and populate the list
+                demoFiles.forEach(file => {
+                    if (file.endsWith('.xml')) {
+                        const listItem = document.createElement('li');
+                        const link = document.createElement('a');
+                        // Construct the URL with the XML filename
+                        link.href = `https://www.gcbasic.com/GCBASIC_Blockly.html?xml=${file}`;
+                        link.textContent = file;
+                        listItem.appendChild(link);
+                        demoList.appendChild(listItem);
+                    }
+                });
+
+                // Hide loading message
+                loading.style.display = 'none';
+
+                // Show error if no XML files found
+                if (demoList.children.length === 0) {
+                    error.textContent = 'No XML demo files found in the examples folder.';
+                    error.style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Error fetching demo files:', err);
+                loading.style.display = 'none';
+                error.style.display = 'block';
+            }
+        }
+
+        // Load demos when the page loads
+        window.onload = loadDemoFiles;
+    </script>
+</body>
+</html>
