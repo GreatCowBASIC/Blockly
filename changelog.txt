@@ -1,12 +1,70 @@
-**Bug Tracking and enhancements - please use this link:**  
+## GCBASIC for Blockly
+
+**Key links:**  
 <a href="https://github.com/GreatCowBASIC/Blockly/issues" target="_blank">Report an Issue and request an enhancement</a>
 
 **Discussions - please use this link:**  
 <a href="https://github.com/GreatCowBASIC/Blockly/discussions/" target="_blank">GCBASIC Blockly discussion</a>
 
+<a href="https://sourceforge.net/p/gcbasic/discussion/579125/thread/8d2ae500e0/?limit=25#327e/c200/76d0/d13c" target="_blank">GCBASIC Forum discussion</a>
+
+To install a local copy of GCBASIC Blockly -  <a href="https://www.gcbasic.com/GCBASIC_Blocky_Guide.html" target="_blank">follow this guide</a>
+
+To download example GCBASIC Blockly projects - <a href="https://www.gcbasic.com/GCBASIC_Blocky_Demos.html" target="_blank">see the download page</a>
+
+Direct access to other online demonstrations - <a href="https://www.gcbasic.com/GCBASIC_Blocky_Examples.html" target="_blank">see the example guide</a>
 
 ---
-# Version 06.08.2025.0E
+
+# Version 06.14.2025.01
+- Add example guide
+- Changed Decorative text block to have no connections.
+
+
+# Version 06.13.2025.05
+- Add REMark block
+- Add Decorative text block
+- Add Snippet container.  This enable code to 'collapsed' into meaningful code segments.
+- Update scaling of PNG
+- Add web icon
+- Add LCDTest.XML demo
+- Add ADC2LCD.XML demo
+- Add ability to pass XML file as start parameter.  See  <a href="https://www.gcbasic.com/GCBASIC_Blocky_Demos.html" target="_blank"> for some of the available demos.
+
+
+# Version 06.12.2025.04
+- Add Table ( List ) creation and ReadTable capability. A lot of work to add this capability.
+- Add basic Python usage instructions
+- Added GCBASIC_Blocky_Guide
+
+# Version 06.11.2025.01
+- Reformat GCBASIC output code to properly show User Subroutines as the last part of the GCBASIC code listing
+- Revise moving info windows smooter
+- Add URLs to this readme
+
+# Version 06.10.2025.02
+- Add search routine to chip selection...needed now the list is over 1300 chips
+- Add the mega chiplist for selection
+- Add Create SubRoutine and call Subroutine
+- Change layout to use 90% of browser
+- Reduced banner font size to give more real estate for Blockly
+- Add GCBASIC logo to workspace
+- Set Grid to off by default
+- New default project now has subroutine capability
+
+---
+# Version 06.09.2025.03
+- Add For-Next Loop with a handler for missing variable
+- Updated to changelog with revised URLs
+- Added Logic Blocks: If-Then-EndIf; If-Else-EndIf;Compare;And|Or;Not;True|False
+- Revised to ensure Logic indents are correct
+- Updated Default project to include Logic Blocks
+
+# Version 06.08.2025.0G
+- Restored 'Load Imported' - deleted in error when removing errant dropdown.
+- Add Group control to Constants Group Container
+- Changed set_variable block to use inline inputs with a text field instead of a value input.
+- Changed math_modulo block to use inline text inputs instead of value inputs.
 - Implement changlog
 - Implement changelog popup with version control
 - Removed the errant dropdown at the bottom of the page
@@ -22,3 +80,12 @@
 
 # Version 06.06.2025.01 
 - Alpha release
+
+
+## Useful URLs
+
+https://google.github.io/blockly-samples/examples/developer-tools/index.html
+
+https://blockly.fusestudio.net/
+
+https://electroblocks.org/code

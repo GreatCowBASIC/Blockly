@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCBASIC Blockly Project Guide</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        h1, h2, h3 { color: #2c3e50; }
+        a { color: #2980b9; }
+        code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+<h1>GCBASIC Blockly Project Guide</h1>
+
+<h2>Introduction</h2>
+
+<p>This guide provides a <strong>straightforward, local installation</strong> of GCBASIC for Blockly, allowing you to run it seamlessly on your system. By using <strong>Python’s built-in <code>http.server</code></strong>, you can create a lightweight web server to host Blockly files without any complex setup.</p>
+
+<p>The process is <strong>simple</strong>:</p>
+<ul>
+    <li>Install Python.</li>
+    <li>Copy Blockly files to a directory.</li>
+    <li>Start a local web server with a single command.</li>
+</ul>
+
+<p>Follow this guide to quickly set up your <code>GCBASIC_Blockly.html</code> project and begin experimenting with Blockly in a controlled environment.</p>
+
+<h2>Table of Contents</h2>
+<ul>
+    <li><a href="#what-is-python-httpserver">What is Python's <code>http.server</code>?</a></li>
+    <li><a href="#why-use-server">Why Use a Simple HTTP Server in Python?</a></li>
+    <li><a href="#how-to-install">How to Start a Server (Install)</a></li>
+    <li><a href="#how-to-start">How to Start a Server (One-liner)</a></li>
+    <li><a href="#how-to-access">How to Access the Server (One-liner)</a></li>
+    <li><a href="#download-python">Best Place to Download Python</a></li>
+</ul>
+
+<h2 id="what-is-python-httpserver">What is Python's <code>http.server</code>?</h2>
+
+<p>Python's <code>http.server</code> is a built-in module that allows you to create a simple HTTP server to serve files from a directory.</p>
+
+<ul>
+    <li><strong>Purpose:</strong> Ideal for testing, development, and quick file sharing.</li>
+    <li><strong>Limitations:</strong> Not recommended for production use due to lack of security features, performance optimization, or scalability.</li>
+</ul>
+
+<h2 id="why-use-server">Why Use a Simple HTTP Server in Python?</h2>
+
+<ul>
+    <li><strong>Easy File Sharing</strong> – Share your Blockly workspace with others on the same network.</li>
+    <li><strong>Quick Testing</strong> – Test your Blockly application locally.</li>
+    <li><strong>Development Convenience</strong> – Serve files for real-time debugging.</li>
+    <li><strong>Cross-Platform</strong> – Works on Windows, macOS, and Linux.</li>
+</ul>
+
+<h2 id="how-to-install">How to Start a Server (Install)</h2>
+
+<ol>
+    <li><strong>Install Python:</strong>  
+        <ul>
+            <li>Download and install Python from the official site <a href="https://www.python.org/downloads/">Python.org</a>.</li>
+            <li>Ensure Python 3.x is installed (<code>python --version</code>).</li>
+        </ul>
+    </li>
+    <li><strong>Copy Files to a Folder:</strong>  
+        <ul>
+            <li>Create a dedicated directory (e.g., <code>BlocklyProject</code>).</li>
+            <li>Copy your Blockly project files into this folder.</li>
+        </ul>
+    </li>
+    <li><strong>Open a Command Prompt:</strong>  
+        <ul>
+            <li><code>cd path/to/BlocklyProject</code> (Windows, macOS, Linux)</li>
+        </ul>
+    </li>
+</ol>
+
+<h2 id="how-to-start">How to Start a Server (One-liner)</h2>
+
+<pre><code>python -m http.server 8000</code></pre>
+
+<h2 id="how-to-access">How to Access the Server (One-liner)</h2>
+
+<pre><code>http://localhost:8000/GCBASIC_Blockly.html</code></pre>
+
+<h2 id="download-python">Best Place to Download Python</h2>
+
+<p>The best place to download Python is the <strong>official Python website</strong>: <a href="https://www.python.org/downloads/">Python.org</a>.</p>
+
+<p>Alternatively, for Windows users: <a href="https://apps.microsoft.com/detail/9NRWMJP3717K?launch=true&mode=full&hl=en-us&gl=gb">Python via Microsoft Store</a>.</p>
+
+</body>
+</html>
