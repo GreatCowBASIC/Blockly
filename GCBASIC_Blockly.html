@@ -127,7 +127,7 @@
 <body>
     <!-- Header and Title -->
     <div class="content">
-        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 11:49</h1>
+        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 12:12</h1>
 
         <!-- Project Management Controls -->
         <div class="controlButtons">
@@ -341,58 +341,70 @@
     };
 
 
-        Blockly.Blocks['get_numeric_constant'] = {
-        init: function () {
-            this.appendDummyInput()
-                .appendField(new Blockly.FieldDropdown(() => this.getNumericConstants(), null, { rename: false }), "CONSTANT_NAME");
-            this.setColour(160); // Changed to color 160
-            this.setOutput(true, null);
-            this.setTooltip("Gets a numeric constant (decimal, hex, or binary) defined by a Configuration Constant block.");
-            this.setOnChange(this.validateConstant);
-        },
+    Blockly.Blocks['get_numeric_constant'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField(new Blockly.FieldDropdown(() => this.getNumericConstants(), null, { rename: false }), "CONSTANT_NAME");
+        this.setColour(160);
+        this.setOutput(true, null);
+        this.setTooltip("Gets a numeric constant (decimal, hex, or binary) defined by a Configuration Constant block.");
+        this.setOnChange(this.validateConstant);
+    },
 
-        getNumericConstants: function () {
-            let workspace = Blockly.getMainWorkspace();
-            if (!workspace) {
-                return [["No numeric constants defined", ""]];
+    getNumericConstants: function () {
+        let workspace = Blockly.getMainWorkspace();
+        if (!workspace) {
+            return [["No numeric constants defined", ""]];
+        }
+        let constantBlocks = workspace.getBlocksByType("define_constant", false);
+        let constantNames = constantBlocks
+            .filter(block => {
+                let value = block.getFieldValue("VALUE")?.trim();
+                return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+            })
+            .map(block => {
+                let name = block.getFieldValue("NAME").toUpperCase().trim();
+                return [name, name];
+            });
+        return constantNames.length > 0 ? constantNames : [["No numeric constants defined", ""]];
+    },
+
+    validateConstant: function () {
+        let workspace = Blockly.getMainWorkspace();
+        if (!workspace) return;
+        let constantName = this.getFieldValue("CONSTANT_NAME");
+        let validConstants = workspace.getBlocksByType("define_constant", false)
+            .filter(block => {
+                let value = block.getFieldValue("VALUE")?.trim();
+                return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+            })
+            .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+
+        if (!validConstants.includes(constantName) && constantName !== "") {
+            this.setWarningText("Error: Selected numeric constant does not exist!", "CONSTANT_MISSING");
+            this.setColour("#FF0000");
+            if (validConstants.length > 0) {
+                this.setFieldValue(validConstants[0], "CONSTANT_NAME");
             }
-            let constantBlocks = workspace.getBlocksByType("define_constant", false);
-            let constantNames = constantBlocks
-                .filter(block => {
-                    let value = block.getFieldValue("VALUE")?.trim();
-                    return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
-                })
-                .map(block => {
-                    let name = block.getFieldValue("NAME").toUpperCase().trim();
-                    return [name, name];
-                });
-            return constantNames.length > 0 ? constantNames : [["No numeric constants defined", ""]];
-        },
+        } else {
+            this.setWarningText(null);
+            this.setColour(160);
+        }
+    },
 
-        validateConstant: function () {
-            let workspace = Blockly.getMainWorkspace();
-            if (!workspace) return;
-            let constantName = this.getFieldValue("CONSTANT_NAME");
-            let validConstants = workspace.getBlocksByType("define_constant", false)
-                .filter(block => {
-                    let value = block.getFieldValue("VALUE")?.trim();
-                    return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
-                })
-                .map(block => block.getFieldValue("NAME").toUpperCase().trim());
-
-            if (!validConstants.includes(constantName) && constantName !== "") {
-                this.setWarningText("Error: Selected numeric constant does not exist!", "CONSTANT_MISSING");
-                this.setColour("#FF0000");
-                if (validConstants.length > 0) {
-                    this.setFieldValue(validConstants[0], "CONSTANT_NAME");
-                }
-            } else {
-                this.setWarningText(null);
-                this.setColour(160);
+    forceSetValue: function (value) {
+        let field = this.getField("CONSTANT_NAME");
+        if (field) {
+            let originalMenuGenerator = field.menuGenerator_;
+            field.menuGenerator_ = [[value, value]];
+            try {
+                field.setValue(value);
+            } finally {
+                field.menuGenerator_ = originalMenuGenerator;
             }
         }
-    };
-
+    }
+};
 
     // JavaScript code generator for get_numeric_constant
     Blockly.JavaScript.forBlock['get_numeric_constant'] = function (block) {
@@ -3307,135 +3319,177 @@
 
     // Revised handleFileSelect function
     function handleFileSelect(event) {
-        var file = event.target.files[0];
-        if (!file) {
-            console.error("ERROR: No file selected!");
-            return;
-        }
+    var file = event.target.files[0];
+    if (!file) {
+        console.error("ERROR: No file selected!");
+        return;
+    }
 
-        var reader = new FileReader();
-        reader.onload = function () {
-            try {
-                console.clear();
-                console.log("DEBUG: Starting import process...");
+    var reader = new FileReader();
+    reader.onload = function () {
+        try {
+            console.clear();
+            console.log("DEBUG: Starting import process...");
 
-                var tempXml = Blockly.utils.xml.textToDom(reader.result);
-                var workspace = Blockly.getMainWorkspace();
-                workspace.clear();
+            var tempXml = Blockly.utils.xml.textToDom(reader.result);
+            var workspace = Blockly.getMainWorkspace();
+            workspace.clear();
 
-                // Step 1: Cache 'create_list' and 'set_constant_state' blocks
-                console.log("DEBUG: Extracting 'create_list' and 'set_constant_state' blocks...");
-                let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
-                    block.getAttribute("type") === "create_list"
-                );
-                let setConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
-                    block.getAttribute("type") === "set_constant_state"
-                );
+            // Step 1: Cache 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks
+            console.log("DEBUG: Extracting 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks...");
+            let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                block.getAttribute("type") === "create_list"
+            );
+            let setConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                block.getAttribute("type") === "set_constant_state"
+            );
+            let getNumericConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                block.getAttribute("type") === "get_numeric_constant"
+            );
 
-                // Cache CONSTANT_NAME values and block IDs for set_constant_state blocks
-                let constantNameCache = setConstantBlocks.map(block => ({
-                    id: block.getAttribute("id"),
-                    name: Array.from(block.getElementsByTagName("field")).find(f =>
-                        f.getAttribute("name") === "CONSTANT_NAME"
-                    )?.textContent || null
-                })).filter(item => item.name);
+            // Cache CONSTANT_NAME values and block IDs for set_constant_state blocks
+            let constantNameCache = setConstantBlocks.map(block => ({
+                id: block.getAttribute("id"),
+                name: Array.from(block.getElementsByTagName("field")).find(f =>
+                    f.getAttribute("name") === "CONSTANT_NAME"
+                )?.textContent || null
+            })).filter(item => item.name);
 
-                console.log(`DEBUG: Cached ${createListBlocks.length} 'create_list' blocks and ${constantNameCache.length} 'set_constant_state' CONSTANT_NAME values.`);
+            // Cache CONSTANT_NAME values and block IDs for get_numeric_constant blocks
+            let numericConstantNameCache = getNumericConstantBlocks.map(block => ({
+                id: block.getAttribute("id"),
+                name: Array.from(block.getElementsByTagName("field")).find(f =>
+                    f.getAttribute("name") === "CONSTANT_NAME"
+                )?.textContent || null
+            })).filter(item => item.name);
 
-                // Step 2: Process 'create_list' blocks with XY positions
-                createListBlocks.forEach(block => {
-                    try {
-                        let x = parseFloat(block.getAttribute("x")) || 50;
-                        let y = parseFloat(block.getAttribute("y")) || 50;
+            console.log(`DEBUG: Cached ${createListBlocks.length} 'create_list' blocks, ${constantNameCache.length} 'set_constant_state' CONSTANT_NAME values, and ${numericConstantNameCache.length} 'get_numeric_constant' CONSTANT_NAME values.`);
 
-                        const tempXmlDoc = document.createElement('xml');
-                        const clonedBlock = block.cloneNode(true);
-                        tempXmlDoc.appendChild(clonedBlock);
+            // Step 2: Process 'create_list' blocks with XY positions
+            createListBlocks.forEach(block => {
+                try {
+                    let x = parseFloat(block.getAttribute("x")) || 50;
+                    let y = parseFloat(block.getAttribute("y")) || 50;
 
-                        Blockly.Xml.domToWorkspace(tempXmlDoc, workspace);
+                    const tempXmlDoc = document.createElement('xml');
+                    const clonedBlock = block.cloneNode(true);
+                    tempXmlDoc.appendChild(clonedBlock);
 
-                        const blockId = clonedBlock.getAttribute("id");
-                        let newBlock = blockId ? workspace.getBlockById(blockId) : workspace.getAllBlocks().find(b => b.type === "create_list" && !b.isInFlyout());
-                        if (newBlock) {
-                            newBlock.moveBy(x, y);
-                        }
+                    Blockly.Xml.domToWorkspace(tempXmlDoc, workspace);
 
-                        block.parentNode.removeChild(block);
-                    } catch (error) {
-                        console.error("ERROR: Failed to process 'create_list' block:", error);
+                    const blockId = clonedBlock.getAttribute("id");
+                    let newBlock = blockId ? workspace.getBlockById(blockId) : workspace.getAllBlocks().find(b => b.type === "create_list" && !b.isInFlyout());
+                    if (newBlock) {
+                        newBlock.moveBy(x, y);
                     }
-                });
 
-                // Step 3: Append remaining blocks
-                console.log("DEBUG: Importing remaining blocks...");
-                Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
-                console.log("DEBUG: Remaining blocks imported successfully!");
+                    block.parentNode.removeChild(block);
+                } catch (error) {
+                    console.error("ERROR: Failed to process 'create_list' block:", error);
+                }
+            });
 
-                // Step 4: Validate 'read_table' dropdowns & fix missing table references
-                console.log("DEBUG: Validating 'read_table' dropdowns...");
-                let listBlocks = workspace.getBlocksByType("create_list", false);
-                let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
-                let tableBlocks = workspace.getBlocksByType("read_table", false);
-                tableBlocks.forEach(block => {
-                    let tableNameField = block.getField("TABLE_NAME");
-                    if (tableNameField && !validTables.includes(tableNameField.getValue())) {
-                        block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
+            // Step 3: Append remaining blocks
+            console.log("DEBUG: Importing remaining blocks...");
+            Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
+            console.log("DEBUG: Remaining blocks imported successfully!");
+
+            // Step 4: Validate 'read_table' dropdowns & fix missing table references
+            console.log("DEBUG: Validating 'read_table' dropdowns...");
+            let listBlocks = workspace.getBlocksByType("create_list", false);
+            let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
+            let tableBlocks = workspace.getBlocksByType("read_table", false);
+            tableBlocks.forEach(block => {
+                let tableNameField = block.getField("TABLE_NAME");
+                if (tableNameField && !validTables.includes(tableNameField.getValue())) {
+                    block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
+                    block.setColour("#FF0000");
+                    tableNameField.setValue(validTables[0] || "");
+                    console.log(`DEBUG: Updated 'read_table' block to valid table: ${validTables[0] || "None Found"}`);
+                } else {
+                    block.setWarningText(null);
+                    block.setColour("#D4A017");
+                }
+            });
+
+            // Step 5: Validate 'set_constant_state' and 'get_numeric_constant' dropdowns & restore cached CONSTANT_NAME values
+            console.log("DEBUG: Validating 'set_constant_state' and 'get_numeric_constant' dropdowns...");
+            setTimeout(() => {
+                let constantBlocks = workspace.getBlocksByType("define_constant", false);
+                let validConstants = constantBlocks
+                    .filter(block => {
+                        let value = block.getFieldValue("VALUE")?.trim();
+                        return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                    })
+                    .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+                let validNumericConstants = constantBlocks
+                    .filter(block => {
+                        let value = block.getFieldValue("VALUE")?.trim();
+                        return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                    })
+                    .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+
+                // Validate set_constant_state blocks
+                let setConstantStateBlocks = workspace.getBlocksByType("set_constant_state", false);
+                setConstantStateBlocks.forEach(block => {
+                    let constantNameField = block.getField("CONSTANT_NAME");
+                    let cachedEntry = constantNameCache.find(entry => entry.id === block.id);
+                    let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
+                    if (constantNameField && !validConstants.includes(cachedName)) {
+                        block.setWarningText("Error: Referenced constant does not exist or is numeric!", "CONSTANT_MISSING");
                         block.setColour("#FF0000");
-                        tableNameField.setValue(validTables[0] || "");
-                        console.log(`DEBUG: Updated 'read_table' block to valid table: ${validTables[0] || "None Found"}`);
+                        constantNameField.setValue(validConstants[0] || "");
+                        console.log(`DEBUG: Updated 'set_constant_state' block to valid constant: ${validConstants[0] || "None Found"}`);
                     } else {
                         block.setWarningText(null);
-                        block.setColour("#D4A017");
+                        block.setColour(160);
+                        if (cachedName && validConstants.includes(cachedName)) {
+                            constantNameField.setValue(cachedName);
+                            console.log(`DEBUG: Restored 'set_constant_state' block CONSTANT_NAME to: ${cachedName}`);
+                        }
                     }
+                    // Force dropdown refresh
+                    constantNameField.setValue(constantNameField.getValue());
                 });
 
-                // Step 5: Validate 'set_constant_state' dropdowns & restore cached CONSTANT_NAME values
-                console.log("DEBUG: Validating 'set_constant_state' dropdowns...");
-                setTimeout(() => {
-                    let constantBlocks = workspace.getBlocksByType("define_constant", false);
-                    let validConstants = constantBlocks
-                        .filter(block => {
-                            let value = block.getFieldValue("VALUE")?.trim();
-                            return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
-                        })
-                        .map(block => block.getFieldValue("NAME").toUpperCase().trim());
-                    let setConstantStateBlocks = workspace.getBlocksByType("set_constant_state", false);
-                    setConstantStateBlocks.forEach(block => {
-                        let constantNameField = block.getField("CONSTANT_NAME");
-                        // Find cached name by block ID
-                        let cachedEntry = constantNameCache.find(entry => entry.id === block.id);
-                        let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
-                        if (constantNameField && !validConstants.includes(cachedName)) {
-                            block.setWarningText("Error: Referenced constant does not exist or is numeric!", "CONSTANT_MISSING");
-                            block.setColour("#FF0000");
-                            constantNameField.setValue(validConstants[0] || "");
-                            console.log(`DEBUG: Updated 'set_constant_state' block to valid constant: ${validConstants[0] || "None Found"}`);
-                        } else {
-                            block.setWarningText(null);
-                            block.setColour(160);
-                            if (cachedName && validConstants.includes(cachedName)) {
-                                constantNameField.setValue(cachedName);
-                                console.log(`DEBUG: Restored 'set_constant_state' block CONSTANT_NAME to: ${cachedName}`);
-                            }
+                // Validate get_numeric_constant blocks
+                let getNumericConstantStateBlocks = workspace.getBlocksByType("get_numeric_constant", false);
+                getNumericConstantStateBlocks.forEach(block => {
+                    let constantNameField = block.getField("CONSTANT_NAME");
+                    let cachedEntry = numericConstantNameCache.find(entry => entry.id === block.id);
+                    let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
+                    if (constantNameField && !validNumericConstants.includes(cachedName)) {
+                        block.setWarningText("Error: Selected numeric constant does not exist!", "CONSTANT_MISSING");
+                        block.setColour("#FF0000");
+                        constantNameField.setValue(validNumericConstants[0] || "");
+                        console.log(`DEBUG: Updated 'get_numeric_constant' block to valid constant: ${validNumericConstants[0] || "None Found"}`);
+                    } else {
+                        block.setWarningText(null);
+                        block.setColour(160);
+                        if (cachedName && validNumericConstants.includes(cachedName)) {
+                            constantNameField.setValue(cachedName);
+                            console.log(`DEBUG: Restored 'get_numeric_constant' block CONSTANT_NAME to: ${cachedName}`);
                         }
-                        // Force dropdown refresh
-                        constantNameField.setValue(constantNameField.getValue());
-                    });
+                    }
+                    // Force dropdown refresh
+                    constantNameField.setValue(constantNameField.getValue());
+                });
 
-                    // Step 6: Initialize code generator
-                    Blockly.JavaScript.init(workspace);
-                    console.log("DEBUG: Code generator initialized successfully!");
-                }, 300); // Increased delay to ensure all blocks are rendered
-            } catch (error) {
-                console.error("ERROR: Parsing XML failed!", error);
-                console.error("DEBUG: Received XML content:", reader.result);
-                logToWebPageErrors(`Error: Failed to parse XML: ${error.message}\n`, "ERROR");
-            }
-        };
+                // Step 6: Initialize code generator
+                Blockly.JavaScript.init(workspace);
+                console.log("DEBUG: Code generator initialized successfully!");
+            }, 300); // Increased delay to ensure all blocks are rendered
+        } catch (error) {
+            console.error("ERROR: Parsing XML failed!", error);
+            console.error("DEBUG: Received XML content:", reader.result);
+            logToWebPageErrors(`Error: Failed to parse XML: ${error.message}\n`, "ERROR");
+        }
+    };
 
-        reader.readAsText(file);
-    }
-        
+    reader.readAsText(file);
+}
+
+
         // before trying to resolve loading of constants.
         // function handleFileSelect(event) {
         //     var file = event.target.files[0];
@@ -3516,139 +3570,178 @@
 
     // Revised importBlocks function
     function importBlocks() {
-        var fileInput = document.getElementById("fileInput");
-        if (!fileInput) {
-            logToWebPageErrors("Error: File input element not found!\n", "ERROR");
+    var fileInput = document.getElementById("fileInput");
+    if (!fileInput) {
+        logToWebPageErrors("Error: File input element not found!\n", "ERROR");
+        return;
+    }
+    fileInput.value = "";
+    fileInput.onchange = function (event) {
+        var file = event.target.files[0];
+        if (!file) {
             return;
         }
-        fileInput.value = "";
-        fileInput.onchange = function (event) {
-            var file = event.target.files[0];
-            if (!file) {
-                return;
-            }
 
-            var reader = new FileReader();
-            reader.onload = function () {
-                try {
-                    var tempXml = Blockly.utils.xml.textToDom(reader.result);
-                    var workspace = Blockly.getMainWorkspace();
+        var reader = new FileReader();
+        reader.onload = function () {
+            try {
+                var tempXml = Blockly.utils.xml.textToDom(reader.result);
+                var workspace = Blockly.getMainWorkspace();
 
-                    // Step 1: Cache 'create_list' and 'set_constant_state' blocks
-                    let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
-                        block.getAttribute("type") === "create_list"
-                    );
-                    let setConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
-                        block.getAttribute("type") === "set_constant_state"
-                    );
+                // Step 1: Cache 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks
+                let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                    block.getAttribute("type") === "create_list"
+                );
+                let setConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                    block.getAttribute("type") === "set_constant_state"
+                );
+                let getNumericConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                    block.getAttribute("type") === "get_numeric_constant"
+                );
 
-                    // Cache CONSTANT_NAME values and block IDs for set_constant_state blocks
-                    let constantNameCache = setConstantBlocks.map(block => ({
-                        id: block.getAttribute("id"),
-                        name: Array.from(block.getElementsByTagName("field")).find(f =>
-                            f.getAttribute("name") === "CONSTANT_NAME"
-                        )?.textContent || null
-                    })).filter(item => item.name);
+                // Cache CONSTANT_NAME values and block IDs for set_constant_state blocks
+                let constantNameCache = setConstantBlocks.map(block => ({
+                    id: block.getAttribute("id"),
+                    name: Array.from(block.getElementsByTagName("field")).find(f =>
+                        f.getAttribute("name") === "CONSTANT_NAME"
+                    )?.textContent || null
+                })).filter(item => item.name);
 
-                    // Step 2: Process 'create_list' blocks with XY positions
-                    createListBlocks.forEach(block => {
-                        try {
-                            let x = parseFloat(block.getAttribute("x")) || 50;
-                            let y = parseFloat(block.getAttribute("y")) || 50;
+                // Cache CONSTANT_NAME values and block IDs for get_numeric_constant blocks
+                let numericConstantNameCache = getNumericConstantBlocks.map(block => ({
+                    id: block.getAttribute("id"),
+                    name: Array.from(block.getElementsByTagName("field")).find(f =>
+                        f.getAttribute("name") === "CONSTANT_NAME"
+                    )?.textContent || null
+                })).filter(item => item.name);
 
-                            const tempXmlDoc = document.createElement('xml');
-                            const clonedBlock = block.cloneNode(true);
-                            tempXmlDoc.appendChild(clonedBlock);
+                // Step 2: Process 'create_list' blocks with XY positions
+                createListBlocks.forEach(block => {
+                    try {
+                        let x = parseFloat(block.getAttribute("x")) || 50;
+                        let y = parseFloat(block.getAttribute("y")) || 50;
 
-                            Blockly.Xml.domToWorkspace(tempXmlDoc, workspace);
+                        const tempXmlDoc = document.createElement('xml');
+                        const clonedBlock = block.cloneNode(true);
+                        tempXmlDoc.appendChild(clonedBlock);
 
-                            const blockId = clonedBlock.getAttribute("id");
-                            let newBlock = blockId ? workspace.getBlockById(blockId) : workspace.getAllBlocks().find(b => b.type === "create_list" && !b.isInFlyout());
-                            if (newBlock) {
-                                newBlock.moveBy(x, y);
-                            }
+                        Blockly.Xml.domToWorkspace(tempXmlDoc, workspace);
 
-                            block.parentNode.removeChild(block);
-                        } catch (error) {
-                            logToWebPageErrors(`Error: Failed to process 'create_list' block: ${error.message}\n`, "ERROR");
+                        const blockId = clonedBlock.getAttribute("id");
+                        let newBlock = blockId ? workspace.getBlockById(blockId) : workspace.getAllBlocks().find(b => b.type === "create_list" && !b.isInFlyout());
+                        if (newBlock) {
+                            newBlock.moveBy(x, y);
                         }
-                    });
 
-                    // Step 3: Append remaining blocks
-                    workspace.getBlocksByType("set_constant_state", false).forEach(block => {
-                        block.isLoading = true;
-                    });
-                    Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
+                        block.parentNode.removeChild(block);
+                    } catch (error) {
+                        logToWebPageErrors(`Error: Failed to process 'create_list' block: ${error.message}\n`, "ERROR");
+                    }
+                });
 
-                    // Step 4: Validate 'read_table' dropdowns & fix missing table references
-                    let listBlocks = workspace.getBlocksByType("create_list", false);
-                    let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
-                    let tableBlocks = workspace.getBlocksByType("read_table", false);
-                    tableBlocks.forEach(block => {
-                        let tableNameField = block.getField("TABLE_NAME");
-                        if (tableNameField && !validTables.includes(tableNameField.getValue())) {
-                            block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
-                            block.setColour("#FF0000");
-                            tableNameField.setValue(validTables[0] || "");
-                        } else {
+                // Step 3: Append remaining blocks
+                workspace.getBlocksByType("set_constant_state", false).forEach(block => {
+                    block.isLoading = true;
+                });
+                Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
+
+                // Step 4: Validate 'read_table' dropdowns & fix missing table references
+                let listBlocks = workspace.getBlocksByType("create_list", false);
+                let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
+                let tableBlocks = workspace.getBlocksByType("read_table", false);
+                tableBlocks.forEach(block => {
+                    let tableNameField = block.getField("TABLE_NAME");
+                    if (tableNameField && !validTables.includes(tableNameField.getValue())) {
+                        block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
+                        block.setColour("#FF0000");
+                        tableNameField.setValue(validTables[0] || "");
+                    } else {
+                        block.setWarningText(null);
+                        block.setColour("#D4A017");
+                    }
+                });
+
+                // Step 5: Validate 'set_constant_state' and 'get_numeric_constant' dropdowns & restore cached CONSTANT_NAME values
+                function validateConstants(retryCount = 0) {
+                    let constantBlocks = workspace.getBlocksByType("define_constant", false);
+                    let validConstants = constantBlocks
+                        .filter(block => {
+                            let value = block.getFieldValue("VALUE")?.trim();
+                            return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                        })
+                        .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+                    let validNumericConstants = constantBlocks
+                        .filter(block => {
+                            let value = block.getFieldValue("VALUE")?.trim();
+                            return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                        })
+                        .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+                    let allValid = true;
+
+                    // Validate set_constant_state blocks
+                    let setConstantStateBlocks = workspace.getBlocksByType("set_constant_state", false);
+                    setConstantStateBlocks.forEach(block => {
+                        let constantNameField = block.getField("CONSTANT_NAME");
+                        let cachedEntry = constantNameCache.find(entry => entry.id === block.id);
+                        let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
+                        block.isLoading = false;
+                        if (constantNameField && validConstants.includes(cachedName)) {
+                            block.forceSetValue(cachedName);
+                            console.log(`Restored constant ${cachedName} for set_constant_state block`);
                             block.setWarningText(null);
-                            block.setColour("#D4A017");
+                            block.setColour(160);
+                        } else {
+                            allValid = false;
+                            block.setWarningText("Error: Referenced constant does not exist or is numeric!", "CONSTANT_MISSING");
+                            block.setColour("#FF0000");
+                            block.forceSetValue(validConstants[0] || "");
                         }
+                        constantNameField.setValue(constantNameField.getValue());
                     });
 
-                    // Step 5: Validate 'set_constant_state' dropdowns & restore cached CONSTANT_NAME values
-                    function validateConstants(retryCount = 0) {
-                        let constantBlocks = workspace.getBlocksByType("define_constant", false);
-                        let validConstants = constantBlocks
-                            .filter(block => {
-                                let value = block.getFieldValue("VALUE")?.trim();
-                                return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
-                            })
-                            .map(block => block.getFieldValue("NAME").toUpperCase().trim());
-                        let setConstantStateBlocks = workspace.getBlocksByType("set_constant_state", false);
-                        let allValid = true;
-
-                        setConstantStateBlocks.forEach(block => {
-                            let constantNameField = block.getField("CONSTANT_NAME");
-                            let cachedEntry = constantNameCache.find(entry => entry.id === block.id);
-                            let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
-                            block.isLoading = false;
-                            if (constantNameField && validConstants.includes(cachedName)) {
-                                block.forceSetValue(cachedName);
-                                console.log(`Restored constant ${cachedName} for set_constant_state block`);
-                                block.setWarningText(null);
-                                block.setColour(200);
-                            } else {
-                                allValid = false;
-                                block.setWarningText("Error: Referenced constant does not exist or is numeric!", "CONSTANT_MISSING");
-                                block.setColour("#FF0000");
-                                block.forceSetValue(validConstants[0] || "");
-                            }
-                            constantNameField.setValue(constantNameField.getValue());
-                        });
-
-                        if (!allValid && retryCount < 2) {
-                            setTimeout(() => validateConstants(retryCount + 1), 500);
-                            return;
+                    // Validate get_numeric_constant blocks
+                    let getNumericConstantStateBlocks = workspace.getBlocksByType("get_numeric_constant", false);
+                    getNumericConstantStateBlocks.forEach(block => {
+                        let constantNameField = block.getField("CONSTANT_NAME");
+                        let cachedEntry = numericConstantNameCache.find(entry => entry.id === block.id);
+                        let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
+                        block.isLoading = false;
+                        if (constantNameField && validNumericConstants.includes(cachedName)) {
+                            block.forceSetValue(cachedName);
+                            console.log(`Restored constant ${cachedName} for get_numeric_constant block`);
+                            block.setWarningText(null);
+                            block.setColour(160);
+                        } else {
+                            allValid = false;
+                            block.setWarningText("Error: Selected numeric constant does not exist!", "CONSTANT_MISSING");
+                            block.setColour("#FF0000");
+                            block.forceSetValue(validNumericConstants[0] || "");
                         }
+                        constantNameField.setValue(constantNameField.getValue());
+                    });
 
-                        // Step 6: Initialize code generator
-                        Blockly.JavaScript.init(workspace);
-                        workspace.render();
-                        Blockly.svgResize(workspace);
-                        logToWebPageErrors("Blocks successfully imported!\n", "INFO");
+                    if (!allValid && retryCount < 2) {
+                        setTimeout(() => validateConstants(retryCount + 1), 500);
+                        return;
                     }
 
+                    // Step 6: Initialize code generator
+                    Blockly.JavaScript.init(workspace);
                     workspace.render();
-                    setTimeout(() => validateConstants(), 750);
-                } catch (error) {
-                    logToWebPageErrors(`Error: Failed to parse XML: ${error.message}\n`, "ERROR");
+                    Blockly.svgResize(workspace);
+                    logToWebPageErrors("Blocks successfully imported!\n", "INFO");
                 }
-            };
-            reader.readAsText(file);
+
+                workspace.render();
+                setTimeout(() => validateConstants(), 750);
+            } catch (error) {
+                logToWebPageErrors(`Error: Failed to parse XML: ${error.message}\n`, "ERROR");
+            }
         };
-        fileInput.click();
-    }
+        reader.readAsText(file);
+    };
+    fileInput.click();
+}
 
         // pre load Constants
         // function importBlocks() {
