@@ -192,6 +192,8 @@
             <block type="string_variable"></block>
             <block type="get_variable"></block>
             <block type="set_variable"></block>
+            <block type="get_numeric_constant"></block> <!-- New block added here -->
+            <block type="get_port_constant"></block> <!-- New block added here -->
         </category>
         <sep></sep>
         <category name="Loops" colour="#A5D6A7">
@@ -222,6 +224,7 @@
                 <!--<block type="wait_conditional"></block>-->
             </category>
             <block type="lcd_cls"></block>
+            <block type="set_constant_state"></block> <!-- New block added here -->
         </category>
         <sep></sep>
         <category name="Containers" colour="#64B5F6">
@@ -257,6 +260,270 @@
             'create_list'
         ];
 
+
+    
+    // Updated get_port_constant block
+    Blockly.Blocks['get_port_constant'] = {
+        init: function () {
+            this.appendDummyInput()
+                .appendField(new Blockly.FieldDropdown(() => this.getPortConstants(), null, { rename: false }), "CONSTANT_NAME");
+            this.setColour(160);
+            this.setOutput(true, null); // Changed to null for broader compatibility
+            this.setTooltip("Gets the state (0 or 1) of a port-related constant (e.g., PORTB.0, PIN1, RA0, RB1) defined by a Configuration Constant block.");
+            this.setOnChange(this.validateConstant);
+        },
+
+        getPortConstants: function () {
+            const PORT_PREFIXES = ['PORT', 'PIN', 'RA', 'RB'];
+            let workspace = Blockly.getMainWorkspace();
+            if (!workspace) {
+                return [["No port constants defined", ""]];
+            }
+            let constantBlocks = workspace.getBlocksByType("define_constant", false);
+            let constantNames = constantBlocks
+                .filter(block => {
+                    let value = block.getFieldValue("VALUE")?.trim().toUpperCase();
+                    return value && PORT_PREFIXES.some(prefix => value.startsWith(prefix));
+                })
+                .map(block => {
+                    let name = block.getFieldValue("NAME").toUpperCase().trim();
+                    return [name, name];
+                });
+            return constantNames.length > 0 ? constantNames : [["No port constants defined", ""]];
+        },
+
+        validateConstant: function () {
+            const PORT_PREFIXES = ['PORT', 'PIN', 'RA', 'RB'];
+            let workspace = Blockly.getMainWorkspace();
+            if (!workspace) return;
+            let constantName = this.getFieldValue("CONSTANT_NAME");
+            let validConstants = workspace.getBlocksByType("define_constant", false)
+                .filter(block => {
+                    let value = block.getFieldValue("VALUE")?.trim().toUpperCase();
+                    return value && PORT_PREFIXES.some(prefix => value.startsWith(prefix));
+                })
+                .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+
+            if (!validConstants.includes(constantName) && constantName !== "") {
+                this.setWarningText("Error: Selected port constant does not exist!", "CONSTANT_MISSING");
+                this.setColour("#FF0000");
+                if (validConstants.length > 0) {
+                    this.setFieldValue(validConstants[0], "CONSTANT_NAME");
+                }
+            } else {
+                this.setWarningText(null);
+                this.setColour(160);
+            }
+        }
+    };
+    
+    // JavaScript code generator for get_port_constant
+    Blockly.JavaScript.forBlock['get_port_constant'] = function (block) {
+        const PORT_PREFIXES = ['PORT', 'PIN', 'RA', 'RB'];
+        let constantName = block.getFieldValue("CONSTANT_NAME");
+        let workspace = Blockly.getMainWorkspace();
+        let constantBlocks = workspace.getBlocksByType("define_constant", false);
+        let constantBlock = constantBlocks.find(b => b.getFieldValue("NAME").toUpperCase().trim() === constantName);
+
+        if (!constantBlock) {
+            logToWebPageErrors(`Error: Port constant "${constantName}" not found.\n`, "ERROR");
+            return ['0', Blockly.JavaScript.ORDER_ATOMIC];
+        }
+
+        let constantValue = constantBlock.getFieldValue("VALUE").trim().toUpperCase();
+        if (!PORT_PREFIXES.some(prefix => constantValue.startsWith(prefix))) {
+            logToWebPageErrors(`Error: Constant "${constantName}" value "${constantValue}" is not a valid port constant.\n`, "ERROR");
+            return ['0', Blockly.JavaScript.ORDER_ATOMIC];
+        }
+
+        // Outputs the constant name, which represents the port state (0 or 1)
+        return [constantName, Blockly.JavaScript.ORDER_ATOMIC];
+    };
+
+
+        Blockly.Blocks['get_numeric_constant'] = {
+        init: function () {
+            this.appendDummyInput()
+                .appendField(new Blockly.FieldDropdown(() => this.getNumericConstants(), null, { rename: false }), "CONSTANT_NAME");
+            this.setColour(160); // Changed to color 160
+            this.setOutput(true, null);
+            this.setTooltip("Gets a numeric constant (decimal, hex, or binary) defined by a Configuration Constant block.");
+            this.setOnChange(this.validateConstant);
+        },
+
+        getNumericConstants: function () {
+            let workspace = Blockly.getMainWorkspace();
+            if (!workspace) {
+                return [["No numeric constants defined", ""]];
+            }
+            let constantBlocks = workspace.getBlocksByType("define_constant", false);
+            let constantNames = constantBlocks
+                .filter(block => {
+                    let value = block.getFieldValue("VALUE")?.trim();
+                    return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                })
+                .map(block => {
+                    let name = block.getFieldValue("NAME").toUpperCase().trim();
+                    return [name, name];
+                });
+            return constantNames.length > 0 ? constantNames : [["No numeric constants defined", ""]];
+        },
+
+        validateConstant: function () {
+            let workspace = Blockly.getMainWorkspace();
+            if (!workspace) return;
+            let constantName = this.getFieldValue("CONSTANT_NAME");
+            let validConstants = workspace.getBlocksByType("define_constant", false)
+                .filter(block => {
+                    let value = block.getFieldValue("VALUE")?.trim();
+                    return value && value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                })
+                .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+
+            if (!validConstants.includes(constantName) && constantName !== "") {
+                this.setWarningText("Error: Selected numeric constant does not exist!", "CONSTANT_MISSING");
+                this.setColour("#FF0000");
+                if (validConstants.length > 0) {
+                    this.setFieldValue(validConstants[0], "CONSTANT_NAME");
+                }
+            } else {
+                this.setWarningText(null);
+                this.setColour(160);
+            }
+        }
+    };
+
+
+    // JavaScript code generator for get_numeric_constant
+    Blockly.JavaScript.forBlock['get_numeric_constant'] = function (block) {
+        let constantName = block.getFieldValue("CONSTANT_NAME");
+        let workspace = Blockly.getMainWorkspace();
+        let constantBlocks = workspace.getBlocksByType("define_constant", false);
+        let constantBlock = constantBlocks.find(b => b.getFieldValue("NAME").toUpperCase().trim() === constantName);
+
+        if (!constantBlock) {
+            logToWebPageErrors(`Error: Numeric constant "${constantName}" not found.\n`, "ERROR");
+            return ['0', Blockly.JavaScript.ORDER_ATOMIC];
+        }
+
+        let constantValue = constantBlock.getFieldValue("VALUE").trim();
+        if (!constantValue.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i)) {
+            logToWebPageErrors(`Error: Constant "${constantName}" value "${constantValue}" is not a valid numeric value.\n`, "ERROR");
+            return ['0', Blockly.JavaScript.ORDER_ATOMIC];
+        }
+
+        return [constantName, Blockly.JavaScript.ORDER_ATOMIC];
+    };
+
+
+
+    // Revised set_constant_state block
+    Blockly.Blocks['set_constant_state'] = {
+        init: function () {
+            this.appendDummyInput()
+                .appendField("Set Constant")
+                .appendField(new Blockly.FieldDropdown(() => this.getConstantNames(), this.onDropdownChange.bind(this)), "CONSTANT_NAME")
+                .appendField("to")
+                .appendField(new Blockly.FieldDropdown([["ON", "1"], ["OFF", "0"]]), "STATE");
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setColour(200);
+            this.setTooltip("Sets an existing constant (e.g., TRIG) to ON (1) or OFF (0). Outputs code like PORTB.0 = 1 or PORTB.0 = 0. Excludes numeric constants.");
+            this.setHelpUrl("");
+            this.isLoading = false;
+            this.setOnChange(this.validateConstant);
+        },
+
+        getConstantNames: function () {
+            let workspace = Blockly.getMainWorkspace();
+            if (!workspace) {
+                return [["No constants defined", ""]];
+            }
+            let constantBlocks = workspace.getBlocksByType("define_constant", false);
+            let constantNames = constantBlocks
+                .filter(block => {
+                    let value = block.getFieldValue("VALUE")?.trim();
+                    return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                })
+                .map(block => {
+                    let name = block.getFieldValue("NAME").toUpperCase().trim();
+                    return [name, name];
+                });
+            return constantNames.length > 0 ? constantNames : [["No constants defined", ""]];
+        },
+
+        onDropdownChange: function (newValue) {
+            if (!this.isLoading) {
+                this.validateConstant();
+            }
+            return newValue;
+        },
+
+        forceSetValue: function (value) {
+            let field = this.getField("CONSTANT_NAME");
+            if (field) {
+                let originalMenuGenerator = field.menuGenerator_;
+                field.menuGenerator_ = [[value, value]];
+                try {
+                    field.setValue(value);
+                } finally {
+                    field.menuGenerator_ = originalMenuGenerator;
+                }
+            }
+        },
+
+        validateConstant: function () {
+            if (this.isLoading) return;
+            let workspace = Blockly.getMainWorkspace();
+            if (!workspace) return;
+            let constantName = this.getFieldValue("CONSTANT_NAME");
+            let validConstants = workspace.getBlocksByType("define_constant", false)
+                .filter(block => {
+                    let value = block.getFieldValue("VALUE")?.trim();
+                    return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                })
+                .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+
+            if (!validConstants.includes(constantName) && constantName !== "") {
+                this.setWarningText("Error: Selected constant does not exist or is numeric!", "CONSTANT_MISSING");
+                this.setColour("#FF0000");
+                if (validConstants.length > 0) {
+                    this.setFieldValue(validConstants[0], "CONSTANT_NAME");
+                } else {
+                    this.setFieldValue("", "CONSTANT_NAME");
+                }
+            } else {
+                this.setWarningText(null);
+                this.setColour(200);
+            }
+        }
+    };
+
+
+
+    // JavaScript code generator for set_constant_state
+    Blockly.JavaScript.forBlock['set_constant_state'] = function (block) {
+        let constantName = block.getFieldValue("CONSTANT_NAME");
+        let state = block.getFieldValue("STATE"); // 1 for ON, 0 for OFF
+        let workspace = Blockly.getMainWorkspace();
+        let constantBlocks = workspace.getBlocksByType("define_constant", false);
+        let constantBlock = constantBlocks.find(b => b.getFieldValue("NAME").toUpperCase().trim() === constantName);
+
+        if (!constantBlock) {
+            logToWebPageErrors(`Error: Constant "${constantName}" not found for set operation.\n`, "ERROR");
+            return tab() + `// Error: Constant "${constantName}" not defined\n`;
+        }
+
+        let constantValue = constantBlock.getFieldValue("VALUE").trim();
+        // Validate that the constant value resembles a port pin (e.g., PORTB.0)
+        if (!constantValue.match(/^[A-Z]+\.\d+$/i)) {
+            logToWebPageErrors(`Error: Constant "${constantName}" value "${constantValue}" is not a valid port pin (e.g., PORTB.0).\n`, "ERROR");
+            return tab() + `// Error: Invalid port pin "${constantValue}" for constant "${constantName}"\n`;
+        }
+
+        let code = tab() + `${constantValue} = ${state}\n`;
+        return formatComment(block, code, indentationStack);
+    };
 
         // Block definition for picture_block with minimal border and maximized picture
         Blockly.Blocks['picture_block'] = {
@@ -1417,116 +1684,347 @@
         //    }
         //};
 
-        Blockly.Blocks['do_loop'] = {
-            init: function () {
-                this.appendDummyInput("DO_HEADER")
-                    .appendField("Do")
-                    .appendField(new Blockly.FieldDropdown([
-                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
-                    ]), "DO_TYPE")
-                    .appendField(new Blockly.FieldTextInput("true"), "DO_CONDITION");
-                this.appendStatementInput("DO_CODE")
-                    .setCheck(null);
-                this.appendDummyInput()
-                    .appendField("Exit Do if")
-                    .appendField(new Blockly.FieldTextInput("false"), "EXIT_CONDITION");
-                this.appendStatementInput("AFTER_EXIT_CODE")
-                    .setCheck(null);
-                this.appendDummyInput("LOOP_FOOTER")
-                    .appendField("Loop")
-                    .appendField(new Blockly.FieldDropdown([
-                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
-                    ]), "LOOP_TYPE")
-                    .appendField(new Blockly.FieldTextInput("true"), "LOOP_CONDITION");
-                this.setColour('#A5D6A7');
-                this.setTooltip("1. Generates code for a loop based on a condition.");
-                this.setPreviousStatement(true, null);
-                this.setNextStatement(true, null);
-                this.setOnChange(function (changeEvent) {
-                    var doType = this.getFieldValue("DO_TYPE");
-                    var loopType = this.getFieldValue("LOOP_TYPE");
-                    var doConditionField = this.getField("DO_CONDITION");
-                    var loopConditionField = this.getField("LOOP_CONDITION");
-                    var fieldName;
-                    if (changeEvent.element === "field") {
-                        fieldName = changeEvent.name;
-                    }
-                    if (doType === "FOREVER") {
-                        doConditionField.setEnabled(false);
-                        loopConditionField.setEnabled(false);
-                        if (loopType !== "NONE") {
-                            this.setFieldValue("NONE", "LOOP_TYPE");
-                        }
-                    } else {
-                        doConditionField.setEnabled(true);
-                        loopConditionField.setEnabled(true);
-                    }
-                    if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
-                        if (fieldName === "DO_TYPE") {
-                            logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
-                            this.setFieldValue("NONE", "LOOP_TYPE");
-                        }
-                        if (fieldName === "LOOP_TYPE") {
-                            logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
-                            this.setFieldValue("NONE", "DO_TYPE");
-                        }
-                    }
-                });
-            }
-        };
+        // Blockly.Blocks['do_loop'] = {
+        //     init: function () {
+        //         this.appendDummyInput("DO_HEADER")
+        //             .appendField("Do")
+        //             .appendField(new Blockly.FieldDropdown([
+        //                 ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
+        //             ]), "DO_TYPE")
+        //             .appendField(new Blockly.FieldTextInput("true"), "DO_CONDITION");
+        //         this.appendStatementInput("DO_CODE")
+        //             .setCheck(null);
+        //         this.appendDummyInput()
+        //             .appendField("Exit Do if")
+        //             .appendField(new Blockly.FieldTextInput("false"), "EXIT_CONDITION");
+        //         this.appendStatementInput("AFTER_EXIT_CODE")
+        //             .setCheck(null);
+        //         this.appendDummyInput("LOOP_FOOTER")
+        //             .appendField("Loop")
+        //             .appendField(new Blockly.FieldDropdown([
+        //                 ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
+        //             ]), "LOOP_TYPE")
+        //             .appendField(new Blockly.FieldTextInput("true"), "LOOP_CONDITION");
+        //         this.setColour('#A5D6A7');
+        //         this.setTooltip("1. Generates code for a loop based on a condition.");
+        //         this.setPreviousStatement(true, null);
+        //         this.setNextStatement(true, null);
+        //         this.setOnChange(function (changeEvent) {
+        //             var doType = this.getFieldValue("DO_TYPE");
+        //             var loopType = this.getFieldValue("LOOP_TYPE");
+        //             var doConditionField = this.getField("DO_CONDITION");
+        //             var loopConditionField = this.getField("LOOP_CONDITION");
+        //             var fieldName;
+        //             if (changeEvent.element === "field") {
+        //                 fieldName = changeEvent.name;
+        //             }
+        //             if (doType === "FOREVER") {
+        //                 doConditionField.setEnabled(false);
+        //                 loopConditionField.setEnabled(false);
+        //                 if (loopType !== "NONE") {
+        //                     this.setFieldValue("NONE", "LOOP_TYPE");
+        //                 }
+        //             } else {
+        //                 doConditionField.setEnabled(true);
+        //                 loopConditionField.setEnabled(true);
+        //             }
+        //             if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
+        //                 if (fieldName === "DO_TYPE") {
+        //                     logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
+        //                     this.setFieldValue("NONE", "LOOP_TYPE");
+        //                 }
+        //                 if (fieldName === "LOOP_TYPE") {
+        //                     logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
+        //                     this.setFieldValue("NONE", "DO_TYPE");
+        //                 }
+        //             }
+        //         });
+        //     }
+        // };
 
-        Blockly.Blocks['do_loop_simple'] = {
-            init: function () {
-                this.appendDummyInput("DO_HEADER")
-                    .appendField("Do")
-                    .appendField(new Blockly.FieldDropdown([
-                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
-                    ]), "DO_TYPE")
-                    .appendField(new Blockly.FieldTextInput("true"), "DO_CONDITION");
-                this.appendStatementInput("DO_CODE")
-                    .setCheck(null);
-                this.appendDummyInput("LOOP_FOOTER")
-                    .appendField("Loop")
-                    .appendField(new Blockly.FieldDropdown([
-                        ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
-                    ]), "LOOP_TYPE")
-                    .appendField(new Blockly.FieldTextInput("true"), "LOOP_CONDITION");
-                this.setColour('#A5D6A7');
-                this.setTooltip("2. Generates a simple loop without an exit condition.");
-                this.setPreviousStatement(true, null);
-                this.setNextStatement(true, null);
-                this.setOnChange(function (changeEvent) {
-                    var doType = this.getFieldValue("DO_TYPE");
-                    var loopType = this.getFieldValue("LOOP_TYPE");
-                    var doConditionField = this.getField("DO_CONDITION");
-                    var loopConditionField = this.getField("LOOP_CONDITION");
-                    var fieldName;
-                    if (changeEvent.element === "field") {
-                        fieldName = changeEvent.name;
+        // Blockly.Blocks['do_loop_simple'] = {
+        //     init: function () {
+        //         this.appendDummyInput("DO_HEADER")
+        //             .appendField("Do")
+        //             .appendField(new Blockly.FieldDropdown([
+        //                 ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
+        //             ]), "DO_TYPE")
+        //             .appendField(new Blockly.FieldTextInput("true"), "DO_CONDITION");
+        //         this.appendStatementInput("DO_CODE")
+        //             .setCheck(null);
+        //         this.appendDummyInput("LOOP_FOOTER")
+        //             .appendField("Loop")
+        //             .appendField(new Blockly.FieldDropdown([
+        //                 ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
+        //             ]), "LOOP_TYPE")
+        //             .appendField(new Blockly.FieldTextInput("true"), "LOOP_CONDITION");
+        //         this.setColour('#A5D6A7');
+        //         this.setTooltip("2. Generates a simple loop without an exit condition.");
+        //         this.setPreviousStatement(true, null);
+        //         this.setNextStatement(true, null);
+        //         this.setOnChange(function (changeEvent) {
+        //             var doType = this.getFieldValue("DO_TYPE");
+        //             var loopType = this.getFieldValue("LOOP_TYPE");
+        //             var doConditionField = this.getField("DO_CONDITION");
+        //             var loopConditionField = this.getField("LOOP_CONDITION");
+        //             var fieldName;
+        //             if (changeEvent.element === "field") {
+        //                 fieldName = changeEvent.name;
+        //             }
+        //             if (doType === "FOREVER") {
+        //                 doConditionField.setEnabled(false);
+        //                 loopConditionField.setEnabled(false);
+        //                 if (loopType !== "NONE") {
+        //                     this.setFieldValue("NONE", "LOOP_TYPE");
+        //                 }
+        //             } else {
+        //                 doConditionField.setEnabled(true);
+        //                 loopConditionField.setEnabled(true);
+        //             }
+        //             if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
+        //                 if (fieldName === "DO_TYPE") {
+        //                     logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
+        //                     this.setFieldValue("NONE", "LOOP_TYPE");
+        //                 }
+        //                 if (fieldName === "LOOP_TYPE") {
+        //                     logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
+        //                     this.setFieldValue("NONE", "DO_TYPE");
+        //                 }
+        //             }
+        //         });
+        //     }
+        // };
+
+// Revised do_loop block with logic statement inputs
+    Blockly.Blocks['do_loop'] = {
+        init: function () {
+            this.appendDummyInput("DO_HEADER")
+                .appendField("Do")
+                .appendField(new Blockly.FieldDropdown([
+                    ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
+                ]), "DO_TYPE");
+            this.appendValueInput("DO_CONDITION")
+                .setCheck("Boolean")
+                .setAlign(Blockly.ALIGN_RIGHT);
+            this.appendStatementInput("DO_CODE")
+                .setCheck(null);
+            this.appendDummyInput("EXIT_HEADER")
+                .appendField("Exit Do if");
+            this.appendValueInput("EXIT_CONDITION")
+                .setCheck("Boolean")
+                .setAlign(Blockly.ALIGN_RIGHT);
+            this.appendStatementInput("AFTER_EXIT_CODE")
+                .setCheck(null);
+            this.appendDummyInput("LOOP_FOOTER")
+                .appendField("Loop")
+                .appendField(new Blockly.FieldDropdown([
+                    ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
+                ]), "LOOP_TYPE");
+            this.appendValueInput("LOOP_CONDITION")
+                .setCheck("Boolean")
+                .setAlign(Blockly.ALIGN_RIGHT);
+            this.setInputsInline(true); // Added to make inputs inline
+            this.setColour('#A5D6A7');
+            this.setTooltip("Executes a loop with optional Do, Exit, and Loop conditions using logic statements.");
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setOnChange(function (changeEvent) {
+                var doType = this.getFieldValue("DO_TYPE");
+                var loopType = this.getFieldValue("LOOP_TYPE");
+                var doConditionInput = this.getInput("DO_CONDITION");
+                var loopConditionInput = this.getInput("LOOP_CONDITION");
+                var fieldName;
+                if (changeEvent.element === "field") {
+                    fieldName = changeEvent.name;
+                }
+                if (doType === "FOREVER") {
+                    doConditionInput.connection.setShadowDom(null);
+                    loopConditionInput.connection.setShadowDom(null);
+                    if (loopType !== "NONE") {
+                        this.setFieldValue("NONE", "LOOP_TYPE");
                     }
-                    if (doType === "FOREVER") {
-                        doConditionField.setEnabled(false);
-                        loopConditionField.setEnabled(false);
-                        if (loopType !== "NONE") {
-                            this.setFieldValue("NONE", "LOOP_TYPE");
-                        }
-                    } else {
-                        doConditionField.setEnabled(true);
-                        loopConditionField.setEnabled(true);
+                } else {
+                    doConditionInput.connection.setShadowDom(null);
+                    loopConditionInput.connection.setShadowDom(null);
+                }
+                if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
+                    if (fieldName === "DO_TYPE") {
+                        logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
+                        this.setFieldValue("NONE", "LOOP_TYPE");
                     }
-                    if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
-                        if (fieldName === "DO_TYPE") {
-                            logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
-                            this.setFieldValue("NONE", "LOOP_TYPE");
-                        }
-                        if (fieldName === "LOOP_TYPE") {
-                            logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
-                            this.setFieldValue("NONE", "DO_TYPE");
-                        }
+                    if (fieldName === "LOOP_TYPE") {
+                        logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
+                        this.setFieldValue("NONE", "DO_TYPE");
                     }
-                });
-            }
-        };
+                }
+            });
+        }
+    };
+
+    // Revised do_loop_simple block with logic statement inputs
+    Blockly.Blocks['do_loop_simple'] = {
+        init: function () {
+            this.appendDummyInput("DO_HEADER")
+                .appendField("Do")
+                .appendField(new Blockly.FieldDropdown([
+                    ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"], ["Forever", "FOREVER"]
+                ]), "DO_TYPE");
+            this.appendValueInput("DO_CONDITION")
+                .setCheck("Boolean")
+                .setAlign(Blockly.ALIGN_RIGHT);
+            this.appendStatementInput("DO_CODE")
+                .setCheck(null);
+            this.appendDummyInput("LOOP_FOOTER")
+                .appendField("Loop")
+                .appendField(new Blockly.FieldDropdown([
+                    ["None", "NONE"], ["While", "WHILE"], ["Until", "UNTIL"]
+                ]), "LOOP_TYPE");
+            this.appendValueInput("LOOP_CONDITION")
+                .setCheck("Boolean")
+                .setAlign(Blockly.ALIGN_RIGHT);
+            this.setInputsInline(true); // Added to make inputs inline
+            this.setColour('#A5D6A7');
+            this.setTooltip("Executes a simple loop with optional Do and Loop conditions using logic statements.");
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setOnChange(function (changeEvent) {
+                var doType = this.getFieldValue("DO_TYPE");
+                var loopType = this.getFieldValue("LOOP_TYPE");
+                var doConditionInput = this.getInput("DO_CONDITION");
+                var loopConditionInput = this.getInput("LOOP_CONDITION");
+                var fieldName;
+                if (changeEvent.element === "field") {
+                    fieldName = changeEvent.name;
+                }
+                if (doType === "FOREVER") {
+                    doConditionInput.connection.setShadowDom(null);
+                    loopConditionInput.connection.setShadowDom(null);
+                    if (loopType !== "NONE") {
+                        this.setFieldValue("NONE", "LOOP_TYPE");
+                    }
+                } else {
+                    doConditionInput.connection.setShadowDom(null);
+                    loopConditionInput.connection.setShadowDom(null);
+                }
+                if (doType !== "NONE" && doType !== "FOREVER" && loopType !== "NONE") {
+                    if (fieldName === "DO_TYPE") {
+                        logToWebPageErrors("Cannot set Do criteria when Loop criteria is specified. Change Loop criteria to `None` to enable Do criteria\n", "WARNING");
+                        this.setFieldValue("NONE", "LOOP_TYPE");
+                    }
+                    if (fieldName === "LOOP_TYPE") {
+                        logToWebPageErrors("Cannot set Loop criteria when Do criteria is specified. Change Do criteria to `None` to enable Loop criteria\n", "WARNING");
+                        this.setFieldValue("NONE", "DO_TYPE");
+                    }
+                }
+            });
+        }
+    };
+
+    // JavaScript generator for do_loop
+    Blockly.JavaScript.forBlock['do_loop'] = function (block) {
+        var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+        indentationStack[indentationStack.length - 1] = currentIndent;
+        var doType = block.getFieldValue('DO_TYPE');
+        var doCondition = Blockly.JavaScript.valueToCode(block, 'DO_CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+        var loopType = block.getFieldValue('LOOP_TYPE');
+        var loopCondition = Blockly.JavaScript.valueToCode(block, 'LOOP_CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+        var exitCondition = Blockly.JavaScript.valueToCode(block, 'EXIT_CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || '';
+        var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
+        var afterExitCode = Blockly.JavaScript.statementToCode(block, 'AFTER_EXIT_CODE') || '';
+        var code = [];
+
+        // Generate Do header
+        if (doType === "WHILE") {
+            code.push(tab() + `Do While ${doCondition}`);
+        } else if (doType === "UNTIL") {
+            code.push(tab() + `Do Until ${doCondition}`);
+        } else if (doType === "FOREVER") {
+            code.push(tab() + 'Do');
+        } else {
+            code.push(tab() + 'Do');
+        }
+
+        // Indent body
+        indentationStack[indentationStack.length - 1]++;
+        if (doCode.trim()) {
+            code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
+        } else {
+            code.push(tab() + '\' No DO_CODE provided');
+        }
+
+        // Generate Exit Do if no logic statement is provided
+        if (!exitCondition) {
+            code.push(tab() + 'Exit Do');
+        } else if (exitCondition && exitCondition !== 'true' && exitCondition !== 'false') {
+            code.push(tab() + `If ${exitCondition} Then Exit Do`);
+        }
+
+        // Generate after exit code
+        if (afterExitCode.trim()) {
+            code.push(reformatCode(afterExitCode, indentationStack[indentationStack.length - 1]));
+        }
+
+        // Restore indent
+        indentationStack[indentationStack.length - 1] = currentIndent;
+
+        // Generate Loop footer
+        if (doType === "NONE" && loopType === "WHILE") {
+            code.push(tab() + `Loop While ${loopCondition}`);
+        } else if (doType === "NONE" && loopType === "UNTIL") {
+            code.push(tab() + `Loop Until ${loopCondition}`);
+        } else {
+            code.push(tab() + 'Loop');
+        }
+
+        code = code.join('\n') + '\n';
+        return formatComment(block, code, indentationStack);
+    };
+
+    // JavaScript generator for do_loop_simple
+    Blockly.JavaScript.forBlock['do_loop_simple'] = function (block) {
+        var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+        indentationStack[indentationStack.length - 1] = currentIndent;
+        var doType = block.getFieldValue('DO_TYPE');
+        var doCondition = Blockly.JavaScript.valueToCode(block, 'DO_CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+        var loopType = block.getFieldValue('LOOP_TYPE');
+        var loopCondition = Blockly.JavaScript.valueToCode(block, 'LOOP_CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+        var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
+        var code = [];
+
+        // Generate Do header
+        if (doType === "WHILE") {
+            code.push(tab() + `Do While ${doCondition}`);
+        } else if (doType === "UNTIL") {
+            code.push(tab() + `Do Until ${doCondition}`);
+        } else if (doType === "FOREVER") {
+            code.push(tab() + 'Do');
+        } else {
+            code.push(tab() + 'Do');
+        }
+
+        // Indent body
+        indentationStack[indentationStack.length - 1]++;
+        if (doCode.trim()) {
+            code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
+        } else {
+            code.push(tab() + '\' No DO_CODE provided');
+        }
+
+        // Restore indent
+        indentationStack[indentationStack.length - 1] = currentIndent;
+
+        // Generate Loop footer
+        if (doType === "NONE" && loopType === "WHILE") {
+            code.push(tab() + `Loop While ${loopCondition}`);
+        } else if (doType === "NONE" && loopType === "UNTIL") {
+            code.push(tab() + `Loop Until ${loopCondition}`);
+        } else {
+            code.push(tab() + 'Loop');
+        }
+
+        code = code.join('\n') + '\n';
+        return formatComment(block, code, indentationStack);
+    };
 
         Blockly.Blocks['do_loop_simplest'] = {
             init: function () {
@@ -2274,87 +2772,87 @@
             return formatComment(block, code, indentationStack);
         };
 
-        Blockly.JavaScript.forBlock['do_loop'] = function (block) {
-            var currentIndent = indentationStack[indentationStack.length - 1] || 1;
-            indentationStack[indentationStack.length - 1] = currentIndent;
-            var doType = block.getFieldValue('DO_TYPE');
-            var doCondition = sanitizeCondition(block.getFieldValue('DO_CONDITION'));
-            var loopType = block.getFieldValue('LOOP_TYPE');
-            var loopCondition = sanitizeCondition(block.getFieldValue('LOOP_CONDITION'));
-            var exitCondition = sanitizeCondition(block.getFieldValue('EXIT_CONDITION'));
-            var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
-            var afterExitCode = Blockly.JavaScript.statementToCode(block, 'AFTER_EXIT_CODE') || '';
-            var code = [];
-            if (doType === "WHILE") {
-                code.push(tab() + `Do While ${doCondition}`);
-            } else if (doType === "UNTIL") {
-                code.push(tab() + `Do Until ${doCondition}`);
-            } else if (doType === "FOREVER") {
-                code.push(tab() + 'Do');
-            } else {
-                code.push(tab() + 'Do');
-            }
-            indentationStack[indentationStack.length - 1]++;
-            if (doCode.trim()) {
-                code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
-            } else {
-                code.push(tab() + '\' No DO_CODE provided');
-            }
-            if (exitCondition && exitCondition !== 'true' && exitCondition !== 'false') {
-                code.push(tab() + `If ${exitCondition} Then Exit Do`);
-            } else if (exitCondition === 'true') {
-                code.push(tab() + 'Exit Do');
-            }
-            if (afterExitCode.trim()) {
-                code.push(reformatCode(afterExitCode, indentationStack[indentationStack.length - 1]));
-            }
-            indentationStack[indentationStack.length - 1] = currentIndent;
-            if (doType === "NONE" && loopType === "WHILE") {
-                code.push(tab() + `Loop While ${loopCondition}`);
-            } else if (doType === "NONE" && loopType === "UNTIL") {
-                code.push(tab() + `Loop Until ${loopCondition}`);
-            } else {
-                code.push(tab() + 'Loop');
-            }
-            code = code.join('\n') + '\n';
-            return formatComment(block, code, indentationStack);
-        };
+        // Blockly.JavaScript.forBlock['do_loop'] = function (block) {
+        //     var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+        //     indentationStack[indentationStack.length - 1] = currentIndent;
+        //     var doType = block.getFieldValue('DO_TYPE');
+        //     var doCondition = sanitizeCondition(block.getFieldValue('DO_CONDITION'));
+        //     var loopType = block.getFieldValue('LOOP_TYPE');
+        //     var loopCondition = sanitizeCondition(block.getFieldValue('LOOP_CONDITION'));
+        //     var exitCondition = sanitizeCondition(block.getFieldValue('EXIT_CONDITION'));
+        //     var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
+        //     var afterExitCode = Blockly.JavaScript.statementToCode(block, 'AFTER_EXIT_CODE') || '';
+        //     var code = [];
+        //     if (doType === "WHILE") {
+        //         code.push(tab() + `Do While ${doCondition}`);
+        //     } else if (doType === "UNTIL") {
+        //         code.push(tab() + `Do Until ${doCondition}`);
+        //     } else if (doType === "FOREVER") {
+        //         code.push(tab() + 'Do');
+        //     } else {
+        //         code.push(tab() + 'Do');
+        //     }
+        //     indentationStack[indentationStack.length - 1]++;
+        //     if (doCode.trim()) {
+        //         code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
+        //     } else {
+        //         code.push(tab() + '\' No DO_CODE provided');
+        //     }
+        //     if (exitCondition && exitCondition !== 'true' && exitCondition !== 'false') {
+        //         code.push(tab() + `If ${exitCondition} Then Exit Do`);
+        //     } else if (exitCondition === 'true') {
+        //         code.push(tab() + 'Exit Do');
+        //     }
+        //     if (afterExitCode.trim()) {
+        //         code.push(reformatCode(afterExitCode, indentationStack[indentationStack.length - 1]));
+        //     }
+        //     indentationStack[indentationStack.length - 1] = currentIndent;
+        //     if (doType === "NONE" && loopType === "WHILE") {
+        //         code.push(tab() + `Loop While ${loopCondition}`);
+        //     } else if (doType === "NONE" && loopType === "UNTIL") {
+        //         code.push(tab() + `Loop Until ${loopCondition}`);
+        //     } else {
+        //         code.push(tab() + 'Loop');
+        //     }
+        //     code = code.join('\n') + '\n';
+        //     return formatComment(block, code, indentationStack);
+        // };
 
-        Blockly.JavaScript.forBlock['do_loop_simple'] = function (block) {
-            var currentIndent = indentationStack[indentationStack.length - 1] || 1;
-            indentationStack[indentationStack.length - 1] = currentIndent;
-            var doType = block.getFieldValue('DO_TYPE');
-            var doCondition = sanitizeCondition(block.getFieldValue('DO_CONDITION'));
-            var loopType = block.getFieldValue('LOOP_TYPE');
-            var loopCondition = sanitizeCondition(block.getFieldValue('LOOP_CONDITION'));
-            var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
-            var code = [];
-            if (doType === "WHILE") {
-                code.push(tab() + `Do While ${doCondition}`);
-            } else if (doType === "UNTIL") {
-                code.push(tab() + `Do Until ${doCondition}`);
-            } else if (doType === "FOREVER") {
-                code.push(tab() + 'Do');
-            } else {
-                code.push(tab() + 'Do');
-            }
-            indentationStack[indentationStack.length - 1]++;
-            if (doCode.trim()) {
-                code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
-            } else {
-                code.push(tab() + '\' No DO_CODE provided');
-            }
-            indentationStack[indentationStack.length - 1] = currentIndent;
-            if (doType === "NONE" && loopType === "WHILE") {
-                code.push(tab() + `Loop While ${loopCondition}`);
-            } else if (doType === "NONE" && loopType === "UNTIL") {
-                code.push(tab() + `Loop Until ${loopCondition}`);
-            } else {
-                code.push(tab() + 'Loop');
-            }
-            code = code.join('\n') + '\n';
-            return formatComment(block, code, indentationStack);
-        };
+        // Blockly.JavaScript.forBlock['do_loop_simple'] = function (block) {
+        //     var currentIndent = indentationStack[indentationStack.length - 1] || 1;
+        //     indentationStack[indentationStack.length - 1] = currentIndent;
+        //     var doType = block.getFieldValue('DO_TYPE');
+        //     var doCondition = sanitizeCondition(block.getFieldValue('DO_CONDITION'));
+        //     var loopType = block.getFieldValue('LOOP_TYPE');
+        //     var loopCondition = sanitizeCondition(block.getFieldValue('LOOP_CONDITION'));
+        //     var doCode = Blockly.JavaScript.statementToCode(block, 'DO_CODE') || '';
+        //     var code = [];
+        //     if (doType === "WHILE") {
+        //         code.push(tab() + `Do While ${doCondition}`);
+        //     } else if (doType === "UNTIL") {
+        //         code.push(tab() + `Do Until ${doCondition}`);
+        //     } else if (doType === "FOREVER") {
+        //         code.push(tab() + 'Do');
+        //     } else {
+        //         code.push(tab() + 'Do');
+        //     }
+        //     indentationStack[indentationStack.length - 1]++;
+        //     if (doCode.trim()) {
+        //         code.push(reformatCode(doCode, indentationStack[indentationStack.length - 1]));
+        //     } else {
+        //         code.push(tab() + '\' No DO_CODE provided');
+        //     }
+        //     indentationStack[indentationStack.length - 1] = currentIndent;
+        //     if (doType === "NONE" && loopType === "WHILE") {
+        //         code.push(tab() + `Loop While ${loopCondition}`);
+        //     } else if (doType === "NONE" && loopType === "UNTIL") {
+        //         code.push(tab() + `Loop Until ${loopCondition}`);
+        //     } else {
+        //         code.push(tab() + 'Loop');
+        //     }
+        //     code = code.join('\n') + '\n';
+        //     return formatComment(block, code, indentationStack);
+        // };
 
         Blockly.JavaScript.forBlock['do_loop_simplest'] = function (block) {
             var currentIndent = indentationStack[indentationStack.length - 1] || 1;
@@ -2807,106 +3305,376 @@
             return code;
         }
 
-        function handleFileSelect(event) {
+    // Revised handleFileSelect function
+    function handleFileSelect(event) {
+        var file = event.target.files[0];
+        if (!file) {
+            console.error("ERROR: No file selected!");
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function () {
+            try {
+                console.clear();
+                console.log("DEBUG: Starting import process...");
+
+                var tempXml = Blockly.utils.xml.textToDom(reader.result);
+                var workspace = Blockly.getMainWorkspace();
+                workspace.clear();
+
+                // Step 1: Cache 'create_list' and 'set_constant_state' blocks
+                console.log("DEBUG: Extracting 'create_list' and 'set_constant_state' blocks...");
+                let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                    block.getAttribute("type") === "create_list"
+                );
+                let setConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                    block.getAttribute("type") === "set_constant_state"
+                );
+
+                // Cache CONSTANT_NAME values and block IDs for set_constant_state blocks
+                let constantNameCache = setConstantBlocks.map(block => ({
+                    id: block.getAttribute("id"),
+                    name: Array.from(block.getElementsByTagName("field")).find(f =>
+                        f.getAttribute("name") === "CONSTANT_NAME"
+                    )?.textContent || null
+                })).filter(item => item.name);
+
+                console.log(`DEBUG: Cached ${createListBlocks.length} 'create_list' blocks and ${constantNameCache.length} 'set_constant_state' CONSTANT_NAME values.`);
+
+                // Step 2: Process 'create_list' blocks with XY positions
+                createListBlocks.forEach(block => {
+                    try {
+                        let x = parseFloat(block.getAttribute("x")) || 50;
+                        let y = parseFloat(block.getAttribute("y")) || 50;
+
+                        const tempXmlDoc = document.createElement('xml');
+                        const clonedBlock = block.cloneNode(true);
+                        tempXmlDoc.appendChild(clonedBlock);
+
+                        Blockly.Xml.domToWorkspace(tempXmlDoc, workspace);
+
+                        const blockId = clonedBlock.getAttribute("id");
+                        let newBlock = blockId ? workspace.getBlockById(blockId) : workspace.getAllBlocks().find(b => b.type === "create_list" && !b.isInFlyout());
+                        if (newBlock) {
+                            newBlock.moveBy(x, y);
+                        }
+
+                        block.parentNode.removeChild(block);
+                    } catch (error) {
+                        console.error("ERROR: Failed to process 'create_list' block:", error);
+                    }
+                });
+
+                // Step 3: Append remaining blocks
+                console.log("DEBUG: Importing remaining blocks...");
+                Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
+                console.log("DEBUG: Remaining blocks imported successfully!");
+
+                // Step 4: Validate 'read_table' dropdowns & fix missing table references
+                console.log("DEBUG: Validating 'read_table' dropdowns...");
+                let listBlocks = workspace.getBlocksByType("create_list", false);
+                let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
+                let tableBlocks = workspace.getBlocksByType("read_table", false);
+                tableBlocks.forEach(block => {
+                    let tableNameField = block.getField("TABLE_NAME");
+                    if (tableNameField && !validTables.includes(tableNameField.getValue())) {
+                        block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
+                        block.setColour("#FF0000");
+                        tableNameField.setValue(validTables[0] || "");
+                        console.log(`DEBUG: Updated 'read_table' block to valid table: ${validTables[0] || "None Found"}`);
+                    } else {
+                        block.setWarningText(null);
+                        block.setColour("#D4A017");
+                    }
+                });
+
+                // Step 5: Validate 'set_constant_state' dropdowns & restore cached CONSTANT_NAME values
+                console.log("DEBUG: Validating 'set_constant_state' dropdowns...");
+                setTimeout(() => {
+                    let constantBlocks = workspace.getBlocksByType("define_constant", false);
+                    let validConstants = constantBlocks
+                        .filter(block => {
+                            let value = block.getFieldValue("VALUE")?.trim();
+                            return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                        })
+                        .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+                    let setConstantStateBlocks = workspace.getBlocksByType("set_constant_state", false);
+                    setConstantStateBlocks.forEach(block => {
+                        let constantNameField = block.getField("CONSTANT_NAME");
+                        // Find cached name by block ID
+                        let cachedEntry = constantNameCache.find(entry => entry.id === block.id);
+                        let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
+                        if (constantNameField && !validConstants.includes(cachedName)) {
+                            block.setWarningText("Error: Referenced constant does not exist or is numeric!", "CONSTANT_MISSING");
+                            block.setColour("#FF0000");
+                            constantNameField.setValue(validConstants[0] || "");
+                            console.log(`DEBUG: Updated 'set_constant_state' block to valid constant: ${validConstants[0] || "None Found"}`);
+                        } else {
+                            block.setWarningText(null);
+                            block.setColour(200);
+                            if (cachedName && validConstants.includes(cachedName)) {
+                                constantNameField.setValue(cachedName);
+                                console.log(`DEBUG: Restored 'set_constant_state' block CONSTANT_NAME to: ${cachedName}`);
+                            }
+                        }
+                        // Force dropdown refresh
+                        constantNameField.setValue(constantNameField.getValue());
+                    });
+
+                    // Step 6: Initialize code generator
+                    Blockly.JavaScript.init(workspace);
+                    console.log("DEBUG: Code generator initialized successfully!");
+                }, 300); // Increased delay to ensure all blocks are rendered
+            } catch (error) {
+                console.error("ERROR: Parsing XML failed!", error);
+                console.error("DEBUG: Received XML content:", reader.result);
+                logToWebPageErrors(`Error: Failed to parse XML: ${error.message}\n`, "ERROR");
+            }
+        };
+
+        reader.readAsText(file);
+    }
+        
+        // before trying to resolve loading of constants.
+        // function handleFileSelect(event) {
+        //     var file = event.target.files[0];
+        //     if (!file) {
+        //         console.error("ERROR: No file selected! @ 1");
+        //         return;
+        //     }
+        //     var reader = new FileReader();
+        //     reader.onload = function () {
+        //         try {
+        //             console.clear(); // Clear previous logs for clean debugging
+        //             console.log("DEBUG: Starting import process...");
+
+        //             var tempXml = Blockly.utils.xml.textToDom(reader.result);
+        //             var workspace = Blockly.getMainWorkspace();
+        //             workspace.clear(); // Ensure fresh workspace
+
+        //             console.log("DEBUG: Extracting 'create_list' blocks...");
+        //             let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+        //                 block.getAttribute("type") === "create_list"
+        //             );
+
+        //             createListBlocks.forEach(block => Blockly.Xml.domToWorkspace(block, workspace));
+        //             console.log(`DEBUG: Imported ${createListBlocks.length} 'create_list' blocks.`);
+
+        //             // Verify that 'create_list' exists before proceeding
+        //             let listBlocks = workspace.getBlocksByType("create_list", false);
+        //             if (listBlocks.length === 0) {
+        //                 console.error("ERROR: No 'create_list' blocks found after import. Aborting!");
+        //                 return;
+        //             }
+
+        //             console.log("DEBUG: 'create_list' blocks are present in the workspace. Proceeding with the rest of the XML...");
+
+        //             // Force workspace refresh before loading the remaining blocks
+        //             Blockly.getMainWorkspace().resize();
+
+        //             // Step 2: Append remaining blocks separately (avoiding duplicate 'create_list' imports)
+        //             Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
+        //             console.log("DEBUG: Remaining blocks imported successfully!");
+
+        //             // Step 3: Validate 'read_table' dropdowns & fix missing table references
+        //             let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
+
+        //             let tableBlocks = workspace.getBlocksByType("read_table", false);
+        //             tableBlocks.forEach(block => {
+        //                 let tableNameField = block.getField("TABLE_NAME");
+
+        //                 if (tableNameField && !validTables.includes(tableNameField.getValue())) {
+        //                     block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
+        //                     block.setColour("#FF0000");
+        //                     tableNameField.setValue(validTables[0] || ""); // Assign first valid table
+        //                     console.log(`DEBUG: Updated dropdown in 'read_table' block to valid table: ${validTables[0] || "None Found"}`);
+        //                 } else {
+        //                     block.setWarningText(null);
+        //                     block.setColour("#D4A017");
+        //                 }
+        //             });
+
+        //             console.log("DEBUG: Ensured 'read_table' dropdown references only valid tables.");
+
+        //             // Step 4: Delay Blockly CodeGenerator initialization until all blocks are fully restored
+        //             setTimeout(() => {
+        //                 Blockly.JavaScript.init(workspace);
+        //                 console.log("DEBUG: Code generator initialized successfully!");
+        //             }, 150);
+
+        //         } catch (error) {
+        //             console.error("ERROR: Parsing XML failed!", error);
+        //             console.error("DEBUG: Received XML content:", reader.result);
+        //         }
+        //     };
+
+        //     reader.readAsText(file);
+        // }
+
+
+
+    // Revised importBlocks function
+    function importBlocks() {
+        var fileInput = document.getElementById("fileInput");
+        if (!fileInput) {
+            logToWebPageErrors("Error: File input element not found!\n", "ERROR");
+            return;
+        }
+        fileInput.value = "";
+        fileInput.onchange = function (event) {
             var file = event.target.files[0];
             if (!file) {
-                console.error("ERROR: No file selected! @ 1");
                 return;
             }
+
             var reader = new FileReader();
             reader.onload = function () {
                 try {
-                    console.clear(); // Clear previous logs for clean debugging
-                    console.log("DEBUG: Starting import process...");
-
                     var tempXml = Blockly.utils.xml.textToDom(reader.result);
                     var workspace = Blockly.getMainWorkspace();
-                    workspace.clear(); // Ensure fresh workspace
 
-                    console.log("DEBUG: Extracting 'create_list' blocks...");
+                    // Step 1: Cache 'create_list' and 'set_constant_state' blocks
                     let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
                         block.getAttribute("type") === "create_list"
                     );
+                    let setConstantBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
+                        block.getAttribute("type") === "set_constant_state"
+                    );
 
-                    createListBlocks.forEach(block => Blockly.Xml.domToWorkspace(block, workspace));
-                    console.log(`DEBUG: Imported ${createListBlocks.length} 'create_list' blocks.`);
+                    // Cache CONSTANT_NAME values and block IDs for set_constant_state blocks
+                    let constantNameCache = setConstantBlocks.map(block => ({
+                        id: block.getAttribute("id"),
+                        name: Array.from(block.getElementsByTagName("field")).find(f =>
+                            f.getAttribute("name") === "CONSTANT_NAME"
+                        )?.textContent || null
+                    })).filter(item => item.name);
 
-                    // Verify that 'create_list' exists before proceeding
-                    let listBlocks = workspace.getBlocksByType("create_list", false);
-                    if (listBlocks.length === 0) {
-                        console.error("ERROR: No 'create_list' blocks found after import. Aborting!");
-                        return;
-                    }
+                    // Step 2: Process 'create_list' blocks with XY positions
+                    createListBlocks.forEach(block => {
+                        try {
+                            let x = parseFloat(block.getAttribute("x")) || 50;
+                            let y = parseFloat(block.getAttribute("y")) || 50;
 
-                    console.log("DEBUG: 'create_list' blocks are present in the workspace. Proceeding with the rest of the XML...");
+                            const tempXmlDoc = document.createElement('xml');
+                            const clonedBlock = block.cloneNode(true);
+                            tempXmlDoc.appendChild(clonedBlock);
 
-                    // Force workspace refresh before loading the remaining blocks
-                    Blockly.getMainWorkspace().resize();
+                            Blockly.Xml.domToWorkspace(tempXmlDoc, workspace);
 
-                    // Step 2: Append remaining blocks separately (avoiding duplicate 'create_list' imports)
+                            const blockId = clonedBlock.getAttribute("id");
+                            let newBlock = blockId ? workspace.getBlockById(blockId) : workspace.getAllBlocks().find(b => b.type === "create_list" && !b.isInFlyout());
+                            if (newBlock) {
+                                newBlock.moveBy(x, y);
+                            }
+
+                            block.parentNode.removeChild(block);
+                        } catch (error) {
+                            logToWebPageErrors(`Error: Failed to process 'create_list' block: ${error.message}\n`, "ERROR");
+                        }
+                    });
+
+                    // Step 3: Append remaining blocks
+                    workspace.getBlocksByType("set_constant_state", false).forEach(block => {
+                        block.isLoading = true;
+                    });
                     Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
-                    console.log("DEBUG: Remaining blocks imported successfully!");
 
-                    // Step 3: Validate 'read_table' dropdowns & fix missing table references
+                    // Step 4: Validate 'read_table' dropdowns & fix missing table references
+                    let listBlocks = workspace.getBlocksByType("create_list", false);
                     let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
-
                     let tableBlocks = workspace.getBlocksByType("read_table", false);
                     tableBlocks.forEach(block => {
                         let tableNameField = block.getField("TABLE_NAME");
-
                         if (tableNameField && !validTables.includes(tableNameField.getValue())) {
                             block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
                             block.setColour("#FF0000");
-                            tableNameField.setValue(validTables[0] || ""); // Assign first valid table
-                            console.log(`DEBUG: Updated dropdown in 'read_table' block to valid table: ${validTables[0] || "None Found"}`);
+                            tableNameField.setValue(validTables[0] || "");
                         } else {
                             block.setWarningText(null);
                             block.setColour("#D4A017");
                         }
                     });
 
-                    console.log("DEBUG: Ensured 'read_table' dropdown references only valid tables.");
+                    // Step 5: Validate 'set_constant_state' dropdowns & restore cached CONSTANT_NAME values
+                    function validateConstants(retryCount = 0) {
+                        let constantBlocks = workspace.getBlocksByType("define_constant", false);
+                        let validConstants = constantBlocks
+                            .filter(block => {
+                                let value = block.getFieldValue("VALUE")?.trim();
+                                return value && !value.match(/^(?:\d+|(0x|0X)[0-9A-Fa-f]+|(0b|0B)[01]+)$/i);
+                            })
+                            .map(block => block.getFieldValue("NAME").toUpperCase().trim());
+                        let setConstantStateBlocks = workspace.getBlocksByType("set_constant_state", false);
+                        let allValid = true;
 
-                    // Step 4: Delay Blockly CodeGenerator initialization until all blocks are fully restored
-                    setTimeout(() => {
+                        setConstantStateBlocks.forEach(block => {
+                            let constantNameField = block.getField("CONSTANT_NAME");
+                            let cachedEntry = constantNameCache.find(entry => entry.id === block.id);
+                            let cachedName = cachedEntry ? cachedEntry.name : constantNameField.getValue();
+                            block.isLoading = false;
+                            if (constantNameField && validConstants.includes(cachedName)) {
+                                block.forceSetValue(cachedName);
+                                console.log(`Restored constant ${cachedName} for set_constant_state block`);
+                                block.setWarningText(null);
+                                block.setColour(200);
+                            } else {
+                                allValid = false;
+                                block.setWarningText("Error: Referenced constant does not exist or is numeric!", "CONSTANT_MISSING");
+                                block.setColour("#FF0000");
+                                block.forceSetValue(validConstants[0] || "");
+                            }
+                            constantNameField.setValue(constantNameField.getValue());
+                        });
+
+                        if (!allValid && retryCount < 2) {
+                            setTimeout(() => validateConstants(retryCount + 1), 500);
+                            return;
+                        }
+
+                        // Step 6: Initialize code generator
                         Blockly.JavaScript.init(workspace);
-                        console.log("DEBUG: Code generator initialized successfully!");
-                    }, 150);
+                        workspace.render();
+                        Blockly.svgResize(workspace);
+                        logToWebPageErrors("Blocks successfully imported!\n", "INFO");
+                    }
 
+                    workspace.render();
+                    setTimeout(() => validateConstants(), 750);
                 } catch (error) {
-                    console.error("ERROR: Parsing XML failed!", error);
-                    console.error("DEBUG: Received XML content:", reader.result);
+                    logToWebPageErrors(`Error: Failed to parse XML: ${error.message}\n`, "ERROR");
                 }
             };
-
             reader.readAsText(file);
-        }
+        };
+        fileInput.click();
+    }
 
-
-        function importBlocks() {
-            var fileInput = document.getElementById("fileInput");
-            if (!fileInput) {
-                console.error("File input not found!");
-                return;
-            }
-            fileInput.value = "";
-            fileInput.onchange = function (event) {
-                var reader = new FileReader();
-                reader.onload = function () {
-                    try {
-                        var xml = Blockly.utils.xml.textToDom(reader.result);
-                        var workspace = Blockly.getMainWorkspace();
-                        Blockly.Xml.appendDomToWorkspace(xml, workspace);
-                        console.log("Blocks successfully imported!");
-                    } catch (error) {
-                        console.error("Error importing XML:", error);
-                        console.error("Received XML:", reader.result);
-                    }
-                };
-                reader.readAsText(event.target.files[0]);
-            };
-            fileInput.click();
-        }
+        // pre load Constants
+        // function importBlocks() {
+        //     var fileInput = document.getElementById("fileInput");
+        //     if (!fileInput) {
+        //         console.error("File input not found!");
+        //         return;
+        //     }
+        //     fileInput.value = "";
+        //     fileInput.onchange = function (event) {
+        //         var reader = new FileReader();
+        //         reader.onload = function () {
+        //             try {
+        //                 var xml = Blockly.utils.xml.textToDom(reader.result);
+        //                 var workspace = Blockly.getMainWorkspace();
+        //                 Blockly.Xml.appendDomToWorkspace(xml, workspace);
+        //                 console.log("Blocks successfully imported!");
+        //             } catch (error) {
+        //                 console.error("Error importing XML:", error);
+        //                 console.error("Received XML:", reader.result);
+        //             }
+        //         };
+        //         reader.readAsText(event.target.files[0]);
+        //     };
+        //     fileInput.click();
+        // }
 
         // revisef 13062025 to hanlde filename
         // Updated loadDefaultXML function with optional XML filename parameter
