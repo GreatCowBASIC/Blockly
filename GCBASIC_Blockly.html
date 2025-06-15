@@ -127,7 +127,7 @@
 <body>
     <!-- Header and Title -->
     <div class="content">
-        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 17:50</h1>
+        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 18:12</h1>
 
         <!-- Project Management Controls -->
         <div class="controlButtons">
@@ -4573,20 +4573,23 @@
             for (let i = 0; i < topBlocks.length; i++) {
                 let block = topBlocks[i];
                 function extractConstants(innerBlock) {
-                    while (innerBlock && innerBlock.isEnabled()) {
+                    let currentBlock = innerBlock;
+                    while (currentBlock) {
                         try {
-                            if (innerBlock.type === 'define_constant') {
-                                constantscode += Blockly.JavaScript.forBlock['define_constant'](innerBlock);
-                            } else if (innerBlock.type === 'constant_block_group') {
-                                let childBlocks = innerBlock.getChildren ? innerBlock.getChildren() : [];
-                                for (let j = 0; j < childBlocks.length; j++) {
-                                    extractConstants(childBlocks[j]);
+                            if (currentBlock.isEnabled()) {
+                                if (currentBlock.type === 'define_constant') {
+                                    constantscode += Blockly.JavaScript.forBlock['define_constant'](currentBlock);
+                                } else if (currentBlock.type === 'constant_block_group') {
+                                    let childBlocks = currentBlock.getChildren ? currentBlock.getChildren() : [];
+                                    for (let j = 0; j < childBlocks.length; j++) {
+                                        extractConstants(childBlocks[j]);
+                                    }
                                 }
                             }
                         } catch (e) {
-                            console.error(`DEBUG: Error in block ${innerBlock.type}: ${e.message}`);
+                            console.error(`DEBUG: Error in block ${currentBlock.type}: ${e.message}`);
                         }
-                        innerBlock = innerBlock.getNextBlock();
+                        currentBlock = currentBlock.getNextBlock();
                     }
                 }
                 extractConstants(block);
@@ -4601,20 +4604,23 @@
             for (let i = 0; i < topBlocks.length; i++) {
                 let block = topBlocks[i];
                 function extractVariables(innerBlock) {
-                    while (innerBlock && innerBlock.isEnabled()) {
+                    let currentBlock = innerBlock;
+                    while (currentBlock) {
                         try {
-                            if (innerBlock.type === 'numeric_variable') {
-                                variablescode += Blockly.JavaScript.forBlock['numeric_variable'](innerBlock);
-                            } else if (innerBlock.type === 'variable_block_group') {
-                                let childBlocks = innerBlock.getChildren ? innerBlock.getChildren() : [];
-                                for (let j = 0; j < childBlocks.length; j++) {
-                                    extractVariables(childBlocks[j]);
+                            if (currentBlock.isEnabled()) {
+                                if (currentBlock.type === 'numeric_variable') {
+                                    variablescode += Blockly.JavaScript.forBlock['numeric_variable'](currentBlock);
+                                } else if (currentBlock.type === 'variable_block_group') {
+                                    let childBlocks = currentBlock.getChildren ? currentBlock.getChildren() : [];
+                                    for (let j = 0; j < childBlocks.length; j++) {
+                                        extractVariables(childBlocks[j]);
+                                    }
                                 }
                             }
                         } catch (e) {
-                            console.error(`DEBUG: Error in block ${innerBlock.type}: ${e.message}`);
+                            console.error(`DEBUG: Error in block ${currentBlock.type}: ${e.message}`);
                         }
-                        innerBlock = innerBlock.getNextBlock();
+                        currentBlock = currentBlock.getNextBlock();
                     }
                 }
                 extractVariables(block);
