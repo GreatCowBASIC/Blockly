@@ -16,7 +16,8 @@ Direct access to other online demonstrations - <a href="https://www.gcbasic.com/
 
 ---
 
-# Version 06.15.2025.02
+# Version 06.15.2025.03
+- Fixed File Open and rationalised the loading of XMLs
 - Changed color and order of the Toolbox categories
 - Add capability to set PORT constant to ON or OFF
 - Add capability to GET the state of a PORT constant, or the value of of non-Port constant

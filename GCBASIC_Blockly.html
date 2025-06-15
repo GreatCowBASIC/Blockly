@@ -127,7 +127,7 @@
 <body>
     <!-- Header and Title -->
     <div class="content">
-        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 12:12</h1>
+        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 15:33</h1>
 
         <!-- Project Management Controls -->
         <div class="controlButtons">
@@ -240,7 +240,7 @@
 </xml>
 
     <!-- Hidden File Input for Import -->
-    <input type="file" id="fileInput" style="display: none" onchange="handleFileSelect(event)">
+    <input type="file" id="fileInput" style="display: none">
 
     <!-- Main Script -->
     <script>
@@ -4323,13 +4323,34 @@
         function openProject() {
             var fileInput = document.getElementById("fileInput");
             if (!fileInput) {
-                console.error("Error: fileInput element is missing!");
-            } else {
-                fileInput.click();
-                // Call the background image function
-                addBackgroundImage("GCstudio.png", 10000); // Default image and 10-second duration
+                logToWebPageErrors("Error: File input element not found!\n", "ERROR");
+                return;
             }
+            fileInput.value = ""; // Reset file input
+            fileInput.onchange = function (event) {
+                var file = event.target.files[0];
+                if (!file) {
+                    logToWebPageErrors("Error: No file selected!\n", "ERROR");
+                    return;
+                }
+                loadXml(file, true, () => {
+                    logToWebPageErrors("Project file opened successfully!\n", "INFO");
+                    addBackgroundImage("GCstudio.png", 10000); // Add background image after loading
+                });
+            };
+            fileInput.click();
         }
+
+        // function openProject() {
+        //     var fileInput = document.getElementById("fileInput");
+        //     if (!fileInput) {
+        //         console.error("Error: fileInput element is missing!");
+        //     } else {
+        //         fileInput.click();
+        //         // Call the background image function
+        //         addBackgroundImage("GCstudio.png", 10000); // Default image and 10-second duration
+        //     }
+        // }
 
         function populateChipDropdown() {
             const select = document.getElementById('chipSelect');
@@ -4799,78 +4820,106 @@
             console.log("Precise Cleanup applied with Y overset:", yOverset);
         }
 
-        function toggleGrid() {
-            gridVisible = !gridVisible;
-            const button = document.getElementById('toggleGridButton');
-            button.textContent = `Toggle Grid (${gridVisible ? 'On' : 'Off'})`;
+            function toggleGrid() {
+                gridVisible = !gridVisible;
+                const button = document.getElementById('toggleGridButton');
+                button.textContent = `Toggle Grid (${gridVisible ? 'On' : 'Off'})`;
 
-            // Save workspace state as XML
-            const xmlDom = Blockly.Xml.workspaceToDom(workspace);
-            const xmlText = Blockly.Xml.domToText(xmlDom);
-            logToWebPageErrors(`Saved XML state\n`, "INFO"); // Debug log
-
-            // Reinitialize workspace with updated grid settings
-            const blocklyDiv = document.getElementById('blocklyDiv');
-            const originalScroll = blocklyDiv.scrollTop; // Save scroll position
-            const originalWidth = blocklyDiv.style.width;
-            const originalHeight = blocklyDiv.style.height;
-            blocklyDiv.innerHTML = ''; // Clear the div
-            workspace.dispose(); // Dispose of the current workspace
-
-            // Re-inject workspace with new grid settings
-            workspace = Blockly.inject('blocklyDiv', {
-                toolbox: document.getElementById('toolbox'),
-                grid: {
-                    spacing: 10,
-                    length: gridVisible ? 2 : 0, // Toggle grid length between 2 (visible) and 0 (hidden)
-                    colour: '#ccc',
-                    snap: true
-                },
-                zoom: {
-                    controls: true,
-                    wheel: true,
-                    startScale: 1.0,
-                    maxScale: 3,
-                    minScale: 0.3,
-                    scaleSpeed: 1.2
-                },
-                move: {
-                    scrollbars: true,
-                    drag: true
+                // Toggle grid visibility and snapping
+                const gridPattern = workspace.getParentSvg().querySelector('pattern');
+                if (gridPattern) {
+                    gridPattern.style.display = gridVisible ? 'block' : 'none';
                 }
-            });
-            logToWebPageErrors("Workspace reinitialized.\n", "INFO"); // Debug log
 
-            // Restore workspace state from XML after ensuring workspace is ready
-            setTimeout(() => {
-                try {
-                    const restoredXml = Blockly.utils.xml.textToDom(xmlText); // Correct method
-                    Blockly.Xml.domToWorkspace(restoredXml, workspace); // Load XML into workspace
-                    logToWebPageErrors("XML restored to workspace."); // Debug log
-                } catch (error) {
-                    logToWebPageErrors(`Error restoring XML: ${error.message}\n`, "ERROR");
-                    console.error("XML Restoration Error:", error, "XML:", xmlText);
-                    return; // Stop execution if restoration fails
+                // Update snapping behavior
+                if (workspace.options && workspace.options.grid) {
+                workspace.options.grid.snap = gridVisible;
                 }
-                // Restore scroll position and dimensions
-                blocklyDiv.scrollTop = originalScroll;
-                blocklyDiv.style.width = originalWidth;
-                blocklyDiv.style.height = originalHeight;
-                document.getElementById('runButton').disabled = false;
-                //setTimeout(() => {
-                //    Blockly.svgResize(workspace);
-                //    workspace.resize();
-                //    logToWebPageErrors("Workspace resized.\n","INFO"); // Debug log
-                //}, 100);
-            }, 200); // Delay to ensure workspace is ready
-        }
+                if (workspace.grid_) {
+                workspace.grid_.snapToGrid_ = gridVisible;
+                }
 
-        // Override the scrub_ function that handles comments
-        Blockly.JavaScript.scrub_ = function (block, code) {
-            var nextBlock = block.nextConnection && block.nextConnection.targetBlock();
-            var nextCode = Blockly.JavaScript.blockToCode(nextBlock);
-            return code + nextCode; // Remove comment insertion here
-        }
+
+                // Log the change
+                logToWebPageErrors(`Grid toggled ${gridVisible ? 'on' : 'off'}.\n`, "INFO");
+
+                // Ensure workspace rendering is updated
+                Blockly.svgResize(workspace);
+                workspace.resize();
+            }
+
+        // function toggleGrid() {
+        //     gridVisible = !gridVisible;
+        //     const button = document.getElementById('toggleGridButton');
+        //     button.textContent = `Toggle Grid (${gridVisible ? 'On' : 'Off'})`;
+
+        //     // Save workspace state as XML
+        //     const xmlDom = Blockly.Xml.workspaceToDom(workspace);
+        //     const xmlText = Blockly.Xml.domToText(xmlDom);
+        //     logToWebPageErrors(`Saved XML state\n`, "INFO"); // Debug log
+
+        //     // Reinitialize workspace with updated grid settings
+        //     const blocklyDiv = document.getElementById('blocklyDiv');
+        //     const originalScroll = blocklyDiv.scrollTop; // Save scroll position
+        //     const originalWidth = blocklyDiv.style.width;
+        //     const originalHeight = blocklyDiv.style.height;
+        //     blocklyDiv.innerHTML = ''; // Clear the div
+        //     workspace.dispose(); // Dispose of the current workspace
+
+        //     // Re-inject workspace with new grid settings
+        //     workspace = Blockly.inject('blocklyDiv', {
+        //         toolbox: document.getElementById('toolbox'),
+        //         grid: {
+        //             spacing: 10,
+        //             length: gridVisible ? 2 : 0, // Toggle grid length between 2 (visible) and 0 (hidden)
+        //             colour: '#ccc',
+        //             snap: true
+        //         },
+        //         zoom: {
+        //             controls: true,
+        //             wheel: true,
+        //             startScale: 1.0,
+        //             maxScale: 3,
+        //             minScale: 0.3,
+        //             scaleSpeed: 1.2
+        //         },
+        //         move: {
+        //             scrollbars: true,
+        //             drag: true
+        //         }
+        //     });
+        //     logToWebPageErrors("Workspace reinitialized.\n", "INFO"); // Debug log
+
+        //     // Restore workspace state from XML after ensuring workspace is ready
+        //     setTimeout(() => {
+        //         try {
+        //             const restoredXml = Blockly.utils.xml.textToDom(xmlText); // Correct method
+        //             Blockly.Xml.domToWorkspace(restoredXml, workspace); // Load XML into workspace
+        //             logToWebPageErrors("XML restored to workspace."); // Debug log
+        //         } catch (error) {
+        //             logToWebPageErrors(`Error restoring XML: ${error.message}\n`, "ERROR");
+        //             console.error("XML Restoration Error:", error, "XML:", xmlText);
+        //             return; // Stop execution if restoration fails
+        //         }
+        //         // Restore scroll position and dimensions
+        //         blocklyDiv.scrollTop = originalScroll;
+        //         blocklyDiv.style.width = originalWidth;
+        //         blocklyDiv.style.height = originalHeight;
+        //         document.getElementById('runButton').disabled = false;
+        //         //setTimeout(() => {
+        //         //    Blockly.svgResize(workspace);
+        //         //    workspace.resize();
+        //         //    logToWebPageErrors("Workspace resized.\n","INFO"); // Debug log
+        //         //}, 100);
+        //     }, 200); // Delay to ensure workspace is ready
+        // }
+
+        // // Override the scrub_ function that handles comments
+        // Blockly.JavaScript.scrub_ = function (block, code) {
+        //     var nextBlock = block.nextConnection && block.nextConnection.targetBlock();
+        //     var nextCode = Blockly.JavaScript.blockToCode(nextBlock);
+        //     return code + nextCode; // Remove comment insertion here
+        // }
 
 
         function handleFileSelect(event) {
