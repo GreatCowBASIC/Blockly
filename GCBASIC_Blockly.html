@@ -127,7 +127,7 @@
 <body>
     <!-- Header and Title -->
     <div class="content">
-        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06142025 08:57</h1>
+        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 11:49</h1>
 
         <!-- Project Management Controls -->
         <div class="controlButtons">
@@ -158,86 +158,86 @@
         </div>
     </div>
 
-    <!-- Toolbox Definition -->
-    <xml id="toolbox" style="display: none">
-        <category name="Setup" colour="#FFD700">
-            <block type="select_chip"></block>
-            <block type="define_constant"></block>
-            <block type="decorative_text"></block>
-            <block type="remarks"></block>
+<!-- Toolbox Definition -->
+<xml id="toolbox" style="display: none">
+    <category name="Setup" colour="#FFD700">
+        <block type="select_chip"></block>
+        <block type="decorative_text"></block>
+        <block type="remarks"></block>
+    </category>
+    <sep></sep>
+    <!-- New Constants Category -->
+    <category name="Constants" colour="#4CAF50">
+        <block type="define_constant"></block>
+        <block type="get_numeric_constant"></block>
+        <block type="get_port_constant"></block>
+        <block type="set_constant_state"></block>
+        <block type="constant_block_group"></block>
+    </category>
+    <sep></sep>
+    <category name="Logic" colour="#D1C4E9">
+        <block type="controls_if"></block>
+        <!-- If-then -->
+        <block type="controls_if_else"></block>
+        <!-- If-then-else -->
+        <block type="logic_compare"></block>
+        <!-- Compare -->
+        <block type="logic_operation"></block>
+        <!-- And/Or -->
+        <block type="logic_negate"></block>
+        <!-- Not -->
+        <block type="logic_boolean"></block>
+        <!-- True/False -->
+    </category>
+    <category name="Math" colour="#2196F3">
+        <block type="math_number"></block>
+        <block type="math_operation"></block>
+        <block type="math_odd_even"></block>
+        <block type="math_modulo"></block>
+    </category>
+    <category name="Variables" colour="#EF9A9A">
+        <block type="string_variable"></block>
+        <block type="get_variable"></block>
+        <block type="set_variable"></block>
+    </category>
+    <sep></sep>
+    <category name="Loops" colour="#A5D6A7">
+        <block type="do_loop_simplest"></block>
+        <block type="for_next_loop"></block>
+        <block type="do_loop_simple"></block>
+        <block type="do_loop"></block>
+        <block type="repeat_loop_simple"></block>
+        <block type="repeat_loop"></block>
+    </category>
+    <category name="Text" colour="#FFCA28">
+        <block type="print_text"></block>
+    </category>
+    <category name="Lists" colour="#D4A017">
+        <block type="create_list"></block>
+        <block type="read_table"></block>
+    </category>
+    <category name="Subroutines" colour="#D7CCC8">
+        <block type="call_subroutine"></block>
+        <block type="user_subroutine"></block>
+    </category>
+    <sep></sep>
+    <category name="Commands" colour="200">
+        <category name="Wait" colour="200">
+            <block type="wait_fixed"></block>
+            <!--<block type="wait_conditional"></block>-->
         </category>
-        <sep></sep>
-        <category name="Logic" colour="#D1C4E9">
-            <block type="controls_if"></block>
-            <!-- If-then -->
-            <block type="controls_if_else"></block>
-            <!-- If-then-else -->
-            <block type="logic_compare"></block>
-            <!-- Compare -->
-            <block type="logic_operation"></block>
-            <!-- And/Or -->
-            <block type="logic_negate"></block>
-            <!-- Not -->
-            <block type="logic_boolean"></block>
-            <!-- True/False -->
-        </category>
-        </category>
-        <category name="Math" colour="#2196F3">
-            <block type="math_number"></block>
-            <block type="math_operation"></block>
-            <block type="math_odd_even"></block>
-            <block type="math_modulo"></block>
-        </category>
-        <category name="Variables" colour="#EF9A9A">
-            <block type="string_variable"></block>
-            <block type="get_variable"></block>
-            <block type="set_variable"></block>
-            <block type="get_numeric_constant"></block> <!-- New block added here -->
-            <block type="get_port_constant"></block> <!-- New block added here -->
-        </category>
-        <sep></sep>
-        <category name="Loops" colour="#A5D6A7">
-            <block type="do_loop_simplest"></block>
-            <block type="for_next_loop"></block>
-            <block type="do_loop_simple"></block>
-            <block type="do_loop"></block>
-            <block type="repeat_loop_simple"></block>
-            <block type="repeat_loop"></block>
-            <sep></sep>
-        </category>
-        <category name="Text" colour="#FFCA28">
-            <block type="print_text"></block>
-        </category>
-        <category name="Lists" colour="#D4A017">
-            <block type="create_list"></block>
-            <block type="read_table"></block>
-
-        </category>
-        <category name="Subroutines" colour="#D7CCC8">
-            <block type="call_subroutine"></block>
-            <block type="user_subroutine"></block>
-        </category>
-        <sep></sep>
-        <category name="Commands" colour="200">
-            <category name="Wait" colour="200">
-                <block type="wait_fixed"></block>
-                <!--<block type="wait_conditional"></block>-->
-            </category>
-            <block type="lcd_cls"></block>
-            <block type="set_constant_state"></block> <!-- New block added here -->
-        </category>
-        <sep></sep>
-        <category name="Containers" colour="#64B5F6">
-            <block type="constant_block_group"></block>
-            <block type="variable_block_group"></block>
-            <block type="code_container"></block>
-        </category>
-        <sep></sep>
-        <!--<category name="Tools" colour="#FFD700">
-            <block type="picture_block"></block>
-        </category>-->
-
-    </xml>
+        <block type="lcd_cls"></block>
+    </category>
+    <sep></sep>
+    <category name="Containers" colour="#64B5F6">
+        <block type="variable_block_group"></block>
+        <block type="code_container"></block>
+    </category>
+    <sep></sep>
+    <!--<category name="Tools" colour="#FFD700">
+        <block type="picture_block"></block>
+    </category>-->
+</xml>
 
     <!-- Hidden File Input for Import -->
     <input type="file" id="fileInput" style="display: none" onchange="handleFileSelect(event)">
@@ -427,7 +427,7 @@
                 .appendField(new Blockly.FieldDropdown([["ON", "1"], ["OFF", "0"]]), "STATE");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
-            this.setColour(200);
+            this.setColour(160);
             this.setTooltip("Sets an existing constant (e.g., TRIG) to ON (1) or OFF (0). Outputs code like PORTB.0 = 1 or PORTB.0 = 0. Excludes numeric constants.");
             this.setHelpUrl("");
             this.isLoading = false;
@@ -494,7 +494,7 @@
                 }
             } else {
                 this.setWarningText(null);
-                this.setColour(200);
+                this.setColour(160);
             }
         }
     };
@@ -3412,7 +3412,7 @@
                             console.log(`DEBUG: Updated 'set_constant_state' block to valid constant: ${validConstants[0] || "None Found"}`);
                         } else {
                             block.setWarningText(null);
-                            block.setColour(200);
+                            block.setColour(160);
                             if (cachedName && validConstants.includes(cachedName)) {
                                 constantNameField.setValue(cachedName);
                                 console.log(`DEBUG: Restored 'set_constant_state' block CONSTANT_NAME to: ${cachedName}`);
