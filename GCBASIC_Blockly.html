@@ -127,7 +127,7 @@
 <body>
     <!-- Header and Title -->
     <div class="content">
-        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 15:33</h1>
+        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 17:50</h1>
 
         <!-- Project Management Controls -->
         <div class="controlButtons">
@@ -2510,7 +2510,7 @@
                 return this.getChipOptions('');
             }
         };
-
+        
         Blockly.Blocks['set_variable'] = {
             init: function () {
                 this.appendDummyInput()
@@ -5224,7 +5224,7 @@
                     if (event.type === Blockly.Events.BLOCK_CREATE) {
                         var block = workspace.getBlockById(event.blockId);
                         if (block && (block.type === 'get_variable' || block.type === 'set_variable')) {
-                            var varName = "myVar";
+                            var varName = block.getField('VAR_NAME').getVariable().name;
                             var exists = workspace.getAllBlocks().some(b =>
                                 b.type === 'numeric_variable' && b.getFieldValue("VAR_NAME") === varName
                             );
