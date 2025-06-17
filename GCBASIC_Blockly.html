@@ -13,7 +13,7 @@
             border: 1px solid black;
             background: #f4f4f4;
             padding: 10px;
-            font-family: monospace;
+            font-family: Arial, sans-serif;
             overflow-y: auto;
             margin: 10px;
             position: relative;
@@ -31,24 +31,26 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-family: Arial, sans-serif;
         }
 
-            #webpageconsole-header button, #WebPageErrors-header button {
-                padding: 2px 8px;
-                font-size: 12px;
-                cursor: pointer;
-                margin-left: 5px;
-            }
+        #webpageconsole-header button, #WebPageErrors-header button {
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 5px;
+            font-family: Arial, sans-serif;
+        }
 
-                #webpageconsole-header button.copied {
-                    background-color: #4CAF50;
-                    color: white;
-                }
+        #outputButtons button.copied {
+            background-color: #4CAF50 !important; /* Green background for success */
+            color: white !important; /* White text for contrast */
+        }
 
-                #webpageconsole-header button.error {
-                    background-color: #f44336;
-                    color: white;
-                }
+        #webpageconsole-header button.error {
+            background-color: #f44336;
+            color: white;
+        }
 
         #consoleContainer {
             display: flex;
@@ -81,6 +83,7 @@
             min-height: 100vh;
             margin: 0;
             padding: 10px;
+            font-family: Arial, sans-serif;
         }
 
         .content {
@@ -104,30 +107,126 @@
             background-image: none;
         }
 
-        /* Style for black outline around blocks, excluding text */
         .blocklyBlockCanvas .blocklyDraggable > *:not(.blocklyText) {
-            stroke: black !important; /* Black outline for all block elements except text */
-            stroke-width: 1px !important; /* Visible edge */
+            stroke: black !important;
+            stroke-width: 1px !important;
         }
 
-        /* Ensure text color and styling remain unaffected */
         .blocklyText {
-            stroke: none !important; /* Explicitly remove stroke from text */
-            color: inherit !important; /* Preserve original text color */
+            stroke: none !important;
+            color: inherit !important;
         }
 
-        /* Hover Effect on Blocks */
         .blocklyDraggable:hover {
             filter: drop-shadow(0px 0px 1px rgb(0, 0, 0));
         }
 
+        /* NEW: Tabbed interface styles */
+        #tab-container {
+            display: flex;
+            background-color: #f8f8f8;
+            border-bottom: 1px solid #ccc;
+        }
 
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f0f0f0;
+            border-right: 1px solid #ccc;
+            transition: background-color 0.2s;
+        }
+
+        .tab:hover {
+            background-color: #e0e0e0;
+        }
+
+        .tab.active {
+            background-color: #fff;
+            font-weight: bold;
+            border-bottom: 2px solid #0078d4;
+        }
+
+        #workspace-container {
+            height: calc(80vh - 40px); /* Adjusted for tabs */
+            position: relative;
+            overflow: hidden;
+        }
+
+        #gcbasicOutput {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+            background-color: #fff;
+            overflow: auto;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #gcbasicOutput.active {
+            display: block;
+        }
+
+        #outputButtons {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #fff;
+            padding: 10px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        #outputButtons button {
+            padding: 5px 10px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+
+        #gcbasicOutput #webpageconsole {
+            margin-top: 10px;
+            width: calc(100% - 20px);
+            height: calc(100% - 60px);
+            position: static; /* Override draggable positioning */
+        }
+
+        #systemLog {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        #systemLog #WebPageErrors {
+            width: calc(100% - 20px);
+            height: 150px;
+            margin: 0;
+        }
+
+        .controlButtons button {
+            margin-right: 10px;
+            padding: 5px 10px;
+            font-family: Arial, sans-serif;
+        }
+
+        #webpageconsole span, #WebPageErrors span {
+            font-family: Arial, sans-serif !important;
+        }
+
+        #blocklyDiv, #blocklyDiv * {
+            font-family: inherit !important;
+        }
     </style>
 </head>
 <body>
     <!-- Header and Title -->
     <div class="content">
-        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06152025 18:12</h1>
+        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06172025 13:24</h1>
 
         <!-- Project Management Controls -->
         <div class="controlButtons">
@@ -142,19 +241,28 @@
             <button id="openReadmeButton" onclick="showPopupFromReadme()">Open Readme</button>
         </div>
 
-        <!-- Blockly Workspace -->
-        <div id="blocklyDiv" style="height: 80vh; width: 100%;"></div>
+        <!-- NEW: Tab container -->
+        <div id="tab-container">
+            <div class="tab active" onclick="switchTab('blockly')">Blockly Workspace</div>
+            <div class="tab" onclick="switchTab('output')">GCBASIC Output</div>
+        </div>
 
-        <!-- Output Displays -->
-        <div id="consoleContainer">
-            <div>
-                <h3 id="WebPageErrors-header">System Log <button onclick="clearErrors(event)">Clear</button></h3>
-                <div id="WebPageErrors"></div>
-            </div>
-            <div>
-                <h3 id="webpageconsole-header">GCBASIC Output <button id="copyConsoleButton" onclick="copyConsole(event)">Copy</button><button onclick="clearConsole(event)">Clear</button></h3>
+        <!-- NEW: Workspace container -->
+        <div id="workspace-container">
+            <div id="blocklyDiv" style="height: 100%; width: 100%;"></div>
+            <div id="gcbasicOutput">
+                <div id="outputButtons">
+                    <button id="copyConsoleButton" onclick="copyConsole(event)">Copy</button>
+                    <button onclick="clearConsole(event)">Clear</button>
+                </div>
                 <div id="webpageconsole"></div>
             </div>
+        </div>
+
+        <!-- NEW: System Log at bottom -->
+        <div id="systemLog">
+            <h3 id="WebPageErrors-header">System Log <button onclick="clearErrors(event)">Clear</button></h3>
+            <div id="WebPageErrors"></div>
         </div>
     </div>
 
@@ -260,8 +368,34 @@
             'create_list'
         ];
 
+        // NEW: Global variable to cache workspace size
+        let blocklySizeCache = { width: null, height: null };
 
-    
+        function switchTab(tab) {
+            const tabs = document.querySelectorAll('.tab');
+            const blocklyDiv = document.getElementById('blocklyDiv');
+            const gcbasicOutput = document.getElementById('gcbasicOutput');
+
+            tabs.forEach(t => t.classList.remove('active'));
+            if (tab === 'blockly') {
+                tabs[0].classList.add('active');
+                // NEW: Restore cached size before showing
+                if (blocklySizeCache.width && blocklySizeCache.height) {
+                    blocklyDiv.style.width = `${blocklySizeCache.width}px`;
+                    blocklyDiv.style.height = `${blocklySizeCache.height}px`;
+                }
+                blocklyDiv.style.display = 'block';
+                gcbasicOutput.classList.remove('active');
+                Blockly.svgResize(workspace); // Ensure Blockly resizes
+            } else {
+                tabs[1].classList.add('active');
+                // NEW: Cache size before hiding
+                blocklySizeCache.width = blocklyDiv.offsetWidth;
+                blocklySizeCache.height = blocklyDiv.offsetHeight;
+                blocklyDiv.style.display = 'none';
+                gcbasicOutput.classList.add('active');
+            }
+        }
     // Updated get_port_constant block
     Blockly.Blocks['get_port_constant'] = {
         init: function () {
@@ -3336,7 +3470,7 @@
             workspace.clear();
 
             // Step 1: Cache 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks
-            console.log("DEBUG: Extracting 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks...");
+            // console.log("DEBUG: Extracting 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks...");
             let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
                 block.getAttribute("type") === "create_list"
             );
@@ -3363,7 +3497,7 @@
                 )?.textContent || null
             })).filter(item => item.name);
 
-            console.log(`DEBUG: Cached ${createListBlocks.length} 'create_list' blocks, ${constantNameCache.length} 'set_constant_state' CONSTANT_NAME values, and ${numericConstantNameCache.length} 'get_numeric_constant' CONSTANT_NAME values.`);
+            // console.log(`DEBUG: Cached ${createListBlocks.length} 'create_list' blocks, ${constantNameCache.length} 'set_constant_state' CONSTANT_NAME values, and ${numericConstantNameCache.length} 'get_numeric_constant' CONSTANT_NAME values.`);
 
             // Step 2: Process 'create_list' blocks with XY positions
             createListBlocks.forEach(block => {
@@ -3392,10 +3526,10 @@
             // Step 3: Append remaining blocks
             console.log("DEBUG: Importing remaining blocks...");
             Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
-            console.log("DEBUG: Remaining blocks imported successfully!");
+            // console.log("DEBUG: Remaining blocks imported successfully!");
 
             // Step 4: Validate 'read_table' dropdowns & fix missing table references
-            console.log("DEBUG: Validating 'read_table' dropdowns...");
+            // console.log("DEBUG: Validating 'read_table' dropdowns...");
             let listBlocks = workspace.getBlocksByType("create_list", false);
             let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
             let tableBlocks = workspace.getBlocksByType("read_table", false);
@@ -3445,7 +3579,7 @@
                         block.setColour(160);
                         if (cachedName && validConstants.includes(cachedName)) {
                             constantNameField.setValue(cachedName);
-                            console.log(`DEBUG: Restored 'set_constant_state' block CONSTANT_NAME to: ${cachedName}`);
+                            // console.log(`DEBUG: Restored 'set_constant_state' block CONSTANT_NAME to: ${cachedName}`);
                         }
                     }
                     // Force dropdown refresh
@@ -3822,7 +3956,7 @@
                 .then(xmlText => {
                     try {
                         console.clear();
-                        console.log("DEBUG: Starting XML load process...");
+                        // console.log("DEBUG: Starting XML load process...");
 
                         const tempXml = Blockly.utils.xml.textToDom(xmlText);
                         const workspace = Blockly.getMainWorkspace();
@@ -3832,7 +3966,7 @@
                         }
 
                         // Step 1: Cache 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks
-                        console.log("DEBUG: Extracting 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks...");
+                        // console.log("DEBUG: Extracting 'create_list', 'set_constant_state', and 'get_numeric_constant' blocks...");
                         let createListBlocks = Array.from(tempXml.getElementsByTagName("block")).filter(block =>
                             block.getAttribute("type") === "create_list"
                         );
@@ -3858,7 +3992,7 @@
                             )?.textContent || null
                         })).filter(item => item.name);
 
-                        console.log(`DEBUG: Cached ${createListBlocks.length} 'create_list' blocks, ${constantNameCache.length} 'set_constant_state' CONSTANT_NAME values, and ${numericConstantNameCache.length} 'get_numeric_constant' CONSTANT_NAME values.`);
+                        // console.log(`DEBUG: Cached ${createListBlocks.length} 'create_list' blocks, ${constantNameCache.length} 'set_constant_state' CONSTANT_NAME values, and ${numericConstantNameCache.length} 'get_numeric_constant' CONSTANT_NAME values.`);
 
                         // Step 2: Process 'create_list' blocks with XY positions
                         createListBlocks.forEach(block => {
@@ -3886,15 +4020,15 @@
                         });
 
                         // Step 3: Append remaining blocks
-                        console.log("DEBUG: Importing remaining blocks...");
+                        // console.log("DEBUG: Importing remaining blocks...");
                         workspace.getBlocksByType("set_constant_state", false).forEach(block => {
                             block.isLoading = true;
                         });
                         Blockly.Xml.appendDomToWorkspace(tempXml, workspace);
-                        console.log("DEBUG: Remaining blocks imported successfully!");
+                        // console.log("DEBUG: Remaining blocks imported successfully!");
 
                         // Step 4: Validate 'read_table' dropdowns
-                        console.log("DEBUG: Validating 'read_table' dropdowns...");
+                        // console.log("DEBUG: Validating 'read_table' dropdowns...");
                         let listBlocks = workspace.getBlocksByType("create_list", false);
                         let validTables = listBlocks.map(block => block.getFieldValue("LIST_NAME"));
                         let tableBlocks = workspace.getBlocksByType("read_table", false);
@@ -3904,7 +4038,7 @@
                                 block.setWarningText("Error: Referenced table does not exist!", "TABLE_MISSING");
                                 block.setColour("#FF0000");
                                 tableNameField.setValue(validTables[0] || "");
-                                console.log(`DEBUG: Updated 'read_table' block to valid table: ${validTables[0] || "None Found"}`);
+                                // console.log(`DEBUG: Updated 'read_table' block to valid table: ${validTables[0] || "None Found"}`);
                             } else {
                                 block.setWarningText(null);
                                 block.setColour("#D4A017");
@@ -3937,7 +4071,7 @@
                                 block.isLoading = false;
                                 if (constantNameField && validConstants.includes(cachedName)) {
                                     block.forceSetValue(cachedName);
-                                    console.log(`Restored constant ${cachedName} for set_constant_state block`);
+                                    // console.log(`Restored constant ${cachedName} for set_constant_state block`);
                                     block.setWarningText(null);
                                     block.setColour(160);
                                 } else {
@@ -3958,12 +4092,12 @@
                                 block.isLoading = false;
                                 if (constantNameField && validNumericConstants.includes(cachedName)) {
                                     block.forceSetValue(cachedName);
-                                    console.log(`Restored constant ${cachedName} for get_numeric_constant block`);
+                                    // console.log(`Restored constant ${cachedName} for get_numeric_constant block`);
                                     block.setWarningText(null);
                                     block.setColour(160);
                                 } else {
                                     allValid = false;
-                                    block.setWarningText("Error: Selected numeric constant does not exist!", "CONSTANT_MISSING");
+                                    // block.setWarningText("Error: Selected numeric constant does not exist!", "CONSTANT_MISSING");
                                     block.setColour("#FF0000");
                                     block.forceSetValue(validNumericConstants[0] || "");
                                 }
@@ -5330,8 +5464,11 @@
                 console.error("Blockly workspace is not initialized yet!");
             }
 
-            makeDraggable(document.querySelector("#consoleContainer > div:first-child"));
-            makeDraggable(document.querySelector("#consoleContainer > div:last-child"));
+            // makeDraggable(document.querySelector("#consoleContainer > div:first-child"));
+            // makeDraggable(document.querySelector("#consoleContainer > div:last-child"));
+
+            makeDraggable(document.querySelector("#systemLog"));
+
             document.addEventListener("keydown", function (event) {
                 if (event.key === "F5" || event.keyCode === 116) {
                     event.preventDefault();
