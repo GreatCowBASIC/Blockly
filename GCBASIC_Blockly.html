@@ -221,6 +221,15 @@
         #blocklyDiv, #blocklyDiv * {
             font-family: inherit !important;
         }
+
+        .tab.flash {
+            animation: flashGreen 0.5s ease-in-out 3;
+        }
+
+        @keyframes flashGreen {
+            0%, 100% { background-color: #f0f0f0; }
+            50% { background-color: #4CAF50; color: white; }
+        }
     </style>
 </head>
 <body>
@@ -244,7 +253,8 @@
         <!-- NEW: Tab container -->
         <div id="tab-container">
             <div class="tab active" onclick="switchTab('blockly')">Blockly Workspace</div>
-            <div class="tab" onclick="switchTab('output')">GCBASIC Output</div>
+            <!-- <div class="tab" onclick="switchTab('output')">GCBASIC Output</div> -->
+            <div class="tab" onclick="switchTab('output')" id="outputTab">GCBASIC Output</div>
         </div>
 
         <!-- NEW: Workspace container -->
@@ -367,6 +377,15 @@
             'user_subroutine',
             'create_list'
         ];
+
+
+        function flashOutputTab() {
+            const outputTab = document.getElementById('outputTab');
+            if (outputTab) {
+                outputTab.classList.add('flash');
+                setTimeout(() => outputTab.classList.remove('flash'), 1500); // Match animation duration (0.5s * 3)
+            }
+        }
 
         // NEW: Global variable to cache workspace size
         let blocklySizeCache = { width: null, height: null };
@@ -4663,6 +4682,7 @@
                 return;
             }
             clearConsole();
+            flashOutputTab(); // Add this line
 
             Blockly.JavaScript.init(workspace);
             const today = new Date();
@@ -5492,6 +5512,7 @@
                 if (event.key === "F6" || event.keyCode === 117) {
                     event.preventDefault();
                     runCode();
+                    flashOutputTab(); // Add this line
                     logToWebPageErrors("Generated code via F6 key.\n");
                 }
             });
