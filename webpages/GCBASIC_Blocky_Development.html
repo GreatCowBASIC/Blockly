@@ -1,0 +1,473 @@
+<div style="font-family: Arial, sans-serif;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extending GCBASIC for Blockly: A Developer's Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #7f8c8d;
+            margin-top: 25px;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+        
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .warning {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .toc {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 5px 0;
+        }
+        
+        .toc a {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Extending GCBASIC for Blockly: A Developer's Guide</h1>
+        
+        <p>This guide explains how to extend GCBASIC for Blockly by editing the <code>custom_blocks.js</code> file to add new blocks and implement JavaScript for specific GCBASIC capabilities. The <code>custom_blocks.js</code> file exists specifically for this purpose, allowing developers to define custom blocks, code generators, and toolbox configurations without modifying the original HTML file (e.g., <code>GCBASIC_Blockly.html</code>). It uses the JavaScript API exclusively for block and toolbox definitions and is designed for developers familiar with Python.</p>
+
+        <p>The guide provides steps to add blocks, update the toolbox programmatically in <code>custom_blocks.js</code>, use the Help for Syntax, and test changes. Code generation and event handlers (e.g., <code>onchange</code>) are defined within <code>Blockly.JavaScript.forBlock[]</code>. The process involves working with JavaScript and Blockly's framework to create custom blocks that generate GCBASIC code, compatible with microcontrollers such as PIC, AVR, and LGT.</p>
+
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#prerequisites">Prerequisites</a></li>
+                <li><a href="#source-structure">Understanding the Source Structure</a></li>
+                <li><a href="#setup">Step 1: Setting Up the Development Environment</a></li>
+                <li><a href="#confirming">Step 2: Confirming custom_blocks.js is Loaded</a></li>
+                <li><a href="#syntax-help">Step 3: Using the Help for Syntax</a></li>
+                <li><a href="#adding-blocks">Step 4: Adding New Blocks with the JavaScript API</a></li>
+                <li><a href="#toolbox">Step 5: Updating the Toolbox in custom_blocks.js</a></li>
+                <li><a href="#testing">Step 6: Testing Your Changes</a></li>
+                <li><a href="#best-practices">Step 8: Best Practices</a></li>
+                <li><a href="#colors">Step 9: Toolbox Category Colours</a></li>
+                <li><a href="#example">Example: Adding a Complex Block</a></li>
+                <li><a href="#troubleshooting">Troubleshooting Common Issues</a></li>
+                <li><a href="#resources">Resources</a></li>
+            </ul>
+        </div>
+
+        <h2 id="prerequisites">Prerequisites</h2>
+        <p>To follow this guide, ensure you have:</p>
+        <ul>
+            <li>A text editor (e.g., GC Code) for editing JavaScript files.</li>
+            <li>A very basic knowledge of JavaScript and Python (for programming logic and local testing).</li>
+            <li>Access to the GCBASIC for Blockly source code, including the <code>custom_blocks.js</code> file, available via <a href="https://sourceforge.net/projects/gcbasic/" target="_blank">GCBASIC Download</a>.</li>
+            <li>A local web server (e.g., Python's <code>http.server</code>) to test changes in a browser.</li>
+            <li>Some familiarity with Blockly's JavaScript API for block and toolbox creation (<a href="https://developers.google.com/blockly/guides/create-custom-blocks/overview" target="_blank">Blockly Developer Guide</a>).</li>
+            <li>A browser with developer tools for debugging JavaScript.</li>
+        </ul>
+
+        <h2 id="source-structure">Understanding the Source Structure</h2>
+        <p>GCBASIC for Blockly is a web-based tool built on Google's Blockly framework, hosted in an HTML file with JavaScript for block definitions, toolbox configuration, and code generation. The key components relevant to this guide are:</p>
+        <ul>
+            <li><strong>HTML File</strong>: The main file (e.g., <code>GCBASIC_Blockly.html</code>) loads Blockly and includes <code>custom_blocks.js</code>, which is always present in the project directory for extending functionality.</li>
+            <li><strong>custom_blocks.js</strong>: A dedicated JavaScript file where developers define custom blocks, code generators, and toolbox configurations to extend the tool's capabilities. It includes a console log to confirm loading.</li>
+            <li><strong>Toolbox Configuration</strong>: Defined in JavaScript within <code>custom_blocks.js</code>, manipulating the <code>&lt;xml id="toolbox"&gt;</code> element to add blocks to categories like <code>Commands</code>.</li>
+            <li><strong>GCBASIC Code Generator</strong>: JavaScript functions in <code>custom_blocks.js</code> within <code>Blockly.JavaScript.forBlock[]</code> that convert blocks to GCBASIC code, with all event handlers (e.g., <code>onchange</code>) defined in the same structure.</li>
+        </ul>
+        <p>The <code>custom_blocks.js</code> file is the primary entry point for customization, designed to allow developers to add new blocks, code generators, and toolbox updates without touching other source files.</p>
+
+        <h2 id="setup">Step 1: Setting Up the Development Environment</h2>
+        <ol>
+            <li><strong>Clone or Download the Source</strong>:
+                <ul>
+                    <li>Download the GCBASIC for Blockly source from <a href="https://github.com/GreatCowBASIC/Blockly" target="_blank">GitHub</a>.</li>
+                    <li>Extract the files to a local directory (e.g., <code>gcbasic-blockly</code>).</li>
+                </ul>
+            </li>
+            <li><strong>Set Up a Local Web Server</strong>:
+                <ul>
+                    <li>Use Python to serve the HTML file locally for testing.</li>
+                    <li>Navigate to the project directory in a terminal and run:</li>
+                </ul>
+                <pre><code>python -m http.server 8000</code></pre>
+                <ul>
+                    <li>Open <code>http://localhost:8000/GCBASIC_Blockly.html</code> in a browser to view the GCBASIC for Blockly interface.</li>
+                </ul>
+            </li>
+            <li><strong>Locate and Edit custom_blocks.js</strong>:
+                <ul>
+                    <li>Find the <code>custom_blocks.js</code> file in the project directory, typically alongside <code>GCBASIC_Blockly.html</code>.</li>
+                    <li>Open the file in your text editor to add or modify blocks, code generators, and toolbox configurations.</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2 id="confirming">Step 2: Confirming custom_blocks.js is Loaded</h2>
+        <p>To verify that <code>custom_blocks.js</code> is loaded correctly:</p>
+        <ul>
+            <li>Ensure <code>custom_blocks.js</code> includes a console log at the start:</li>
+        </ul>
+        <pre><code>console.log('custom_blocks.js loaded successfully.');</code></pre>
+        <ul>
+            <li>Open the browser's developer tools (F12, Console tab) after loading the page.</li>
+            <li>Look for the message <code>custom_blocks.js loaded successfully.</code> If missing, check:
+                <ul>
+                    <li>The file path in the HTML's <code>&lt;script src="custom_blocks.js"&gt;&lt;/script&gt;</code> tag matches the file's location.</li>
+                    <li>No JavaScript errors in the console prevent the file from loading.</li>
+                    <li>The browser cache is cleared (Ctrl+Shift+R) to ensure the latest file is loaded.</li>
+                    <li>You may see other messages or errors but you are looking for those related to 'custom_blocks.js'.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2 id="syntax-help">Step 3: Using the Help for Syntax</h2>
+        <p>The GCBASIC Help for Syntax provides detailed documentation on commands, constants, and syntax for generating valid GCBASIC code. This is critical for creating blocks that produce correct microcontroller code.</p>
+        <ul>
+            <li><strong>Access the Help</strong>:
+                <ul>
+                    <li>Visit the <a href="https://www.gcbasic.com/GCBASIC_Blockly_Guide.html" target="_blank">GCBASIC Blockly Guide</a> for an overview.</li>
+                    <li>Refer to the <a href="http://gcbasic.sourceforge.net/help/" target="_blank">GCBASIC Help</a> for detailed syntax, including commands like <code>SET</code>, <code>WAIT</code>, or <code>LCD</code>.</li>
+                    <li>Example: For a block implementing the <code>SET PORTx.y ON</code> command, check the Help for the syntax: <code>SET PORTx.y ON</code> or <code>SET PORTx.y OFF</code>.</li>
+                </ul>
+            </li>
+            <li><strong>Using Syntax in Block Development</strong>:
+                <ul>
+                    <li>Match block inputs to GCBASIC syntax. For example, a <code>SET</code> command requires a port (e.g., <code>PORTB.0</code>) and a state (<code>ON</code> or <code>OFF</code>).</li>
+                    <li>Use the Help to validate parameters, such as valid port names or timing values for <code>WAIT</code>.</li>
+                </ul>
+            </li>
+            <li><strong>Tips</strong>:
+                <ul>
+                    <li>Search the Help for microcontroller-specific details (e.g., PIC16F877A port configurations).</li>
+                    <li>Note case sensitivity: GCBASIC commands are typically uppercase (e.g., <code>SET</code>, <code>WAIT</code>).</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2 id="adding-blocks">Step 4: Adding New Blocks with the JavaScript API</h2>
+        <p>Blocks are defined using Blockly's JavaScript API in <code>custom_blocks.js</code>. Below is an example of creating a block for the GCBASIC <code>SET PORTx.y ON/OFF</code> command, which sets a microcontroller pin state.</p>
+        
+        <ol>
+            <li><strong>Define the Block</strong>:
+                <p>In <code>custom_blocks.js</code>, add or modify:</p>
+                <pre><code>Blockly.Blocks['set_port'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField('SET')
+        .appendField(new Blockly.FieldTextInput('PORTB.0'), 'PORT')
+        .appendField(new Blockly.FieldDropdown([['ON', 'ON'], ['OFF', 'OFF']]), 'STATE');
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setTooltip('Sets a microcontroller port pin to ON or OFF.');
+    this.setHelpUrl('http://gcbasic.sourceforge.net/help/_SET.html');
+    this.setColour(200); // Adds the color hue
+    // Attach onchange here instead
+    this.setOnChange(function(event) {
+      if (!this.workspace) return; // avoid detached blocks
+      var portValue = this.getFieldValue('PORT');
+      if (!/^PORT[A-Z]\.\d+$/.test(portValue)) {
+        this.setWarningText('Invalid port format. Use PORTx.y (e.g., PORTB.0).');
+      } else {
+        this.setWarningText(null);
+      }
+    });
+  }
+};</code></pre>
+            </li>
+            <li><strong>Generate GCBASIC Code and Define Events</strong>:
+                <p>Add the code generator and event handlers within <code>Blockly.JavaScript.forBlock['set_port']</code>:</p>
+                <pre><code>// Define code generator and events for set_port
+Blockly.JavaScript.forBlock['set_port'] = function(block) {
+  var port = block.getFieldValue('PORT');
+  var state = block.getFieldValue('STATE');
+  var code = 'SET ' + port + ' ' + state + '\n';
+  return tab() + code;
+};</code></pre>
+                <p>The <code>tab()</code> maintains the level of indentation automatically. See within the HTML source for example of complex indentation.</p>
+            </li>
+        </ol>
+
+        <h2 id="toolbox">Step 5: Updating the Toolbox in custom_blocks.js</h2>
+        <p>The toolbox is configured programmatically in <code>custom_blocks.js</code> using the JavaScript API, allowing you to add new blocks to existing categories like <code>Constants</code> (colour <code>#4CAF50</code>).</p>
+        
+        <ol>
+            <li><strong>Add a Block to a Category</strong>:
+                <p>In <code>custom_blocks.js</code>, use the public utility function to add the block:</p>
+                <pre><code>addBlockToToolbox(blockType, categoryName [, extraAttributes] )</code></pre>
+                <p>In <code>custom_blocks.js</code>, specific to the example add the block:</p>
+                <pre><code>// Add set_port block to Commands category
+addBlockToToolbox('set_port', 'Commands');</code></pre>
+            </li>
+            <li><strong>Benefits of JavaScript Toolbox Configuration</strong>:
+                <ul>
+                    <li>Centralizes all extensions (blocks, generators, toolbox) in <code>custom_blocks.js</code>.</li>
+                    <li>Eliminates HTML modifications, streamlining development.</li>
+                    <li>Supports dynamic toolbox updates (e.g., based on user settings or chip selection).</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2 id="testing">Step 6: Testing Your Changes</h2>
+        <ol>
+            <li><strong>Run the Local Server</strong>:
+                <p>Ensure the Python server is running:</p>
+                <pre><code>python -m http.server 8000</code></pre>
+                <p>Open <code>http://localhost:8000/GCBASIC_Blockly.html</code> in a browser.</p>
+            </li>
+            <li><strong>Test the Blocks and Toolbox</strong>:
+                <ul>
+                    <li>Verify the toolbox includes <code>set_port</code> in <code>Commands</code> (purple hue, TOOLBOX_COLOUR_COMMANDS).</li>
+                    <li>Drag blocks to the workspace and configure inputs (e.g., <code>PORTB.0</code> and <code>ON</code>).</li>
+                    <li>Check that event handlers (e.g., <code>onchange</code> warnings) trigger correctly (e.g., invalid port format).</li>
+                    <li>Generate GCBASIC code and check the output (e.g., <code>SET PORTB.0 ON</code>).</li>
+                </ul>
+            </li>
+            <li><strong>Debug Issues</strong>:
+                <ul>
+                    <li>Use browser developer tools (F12, Console tab) to check for JavaScript errors.</li>
+                    <li>Confirm console logs show:
+                        <pre><code>custom_blocks.js loaded successfully.
+Adding block "set_port" to category "Commands".
+Block "set_port" added to "Commands".</code></pre>
+                    </li>
+                    <li>Compare generated code with the <a href="http://gcbasic.sourceforge.net/help/" target="_blank">GCBASIC Help</a> for accuracy.</li>
+                    <li>If blocks appear black, ensure the <code>colour</code> attribute is set in the HTML (e.g., <code>&lt;category name="Commands" colour="200"&gt;</code>).</li>
+                </ul>
+            </li>
+            <li><strong>Test on a Microcontroller</strong>:
+                <ul>
+                    <li>Export the GCBASIC code.</li>
+                    <li>Compile it using the GCBASIC IDE and upload to a microcontroller (e.g., PIC16F877A).</li>
+                    <li>Test the behaviour (e.g., pin state changes).</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2 id="best-practices">Step 8: Best Practices</h2>
+        <ul>
+            <li><strong>Use the Help for Syntax</strong>: Cross-reference the <a href="http://gcbasic.sourceforge.net/help/" target="_blank">GCBASIC Help</a> to ensure valid GCBASIC code.</li>
+            <li><strong>Keep Blocks Simple</strong>: Match GCBASIC's straightforward syntax with minimal inputs.</li>
+            <li><strong>Validate Inputs</strong>: Check ports, values, or units within <code>Blockly.JavaScript.forBlock[]</code> to prevent errors.</li>
+            <li><strong>Document Blocks</strong>: Include tooltips and help URLs linking to GCBASIC Help.</li>
+            <li><strong>Manage Toolbox Dynamically</strong>: Use the <code>addBlockToToolbox</code> utility to add blocks to categories with appropriate colours.</li>
+            <li><strong>Define Events in forBlock</strong>: Place all event handlers (e.g., <code>onchange</code>) within <code>Blockly.Block[]</code> for consistency.</li>
+            <li><strong>Test Incrementally</strong>: Test each block and toolbox change before adding more.</li>
+            <li><strong>Engage with the Community</strong>: Share extensions on the <a href="https://github.com/GreatCowBASIC/Blockly" target="_blank">GCBASIC Developer Blockly Forum</a>.</li>
+        </ul>
+
+        <h2 id="colors">Step 9: Toolbox Category Colours</h2>
+        <p>The toolbox categories and their colours, defined in the HTML's <code>&lt;xml id="toolbox"&gt;</code>, are as follows. Blocks inherit the colour of their parent category unless explicitly overridden:</p>
+        <ul>
+            <li><strong>Setup</strong>: <code>#FFD700</code> (gold)</li>
+            <li><strong>Constants</strong>: <code>#4CAF50</code> (green)</li>
+            <li><strong>Logic</strong>: <code>#D1C4E9</code> (light purple)</li>
+            <li><strong>Math</strong>: <code>#2196F3</code> (blue)</li>
+            <li><strong>Variables</strong>: <code>#EF9A9A</code> (light red/pink)</li>
+            <li><strong>Loops</strong>: <code>#A5D6A7</code> (light green)</li>
+            <li><strong>Text</strong>: <code>#FFCA28</code> (yellow-orange)</li>
+            <li><strong>Lists</strong>: <code>#D4A017</code> (dark yellow)</li>
+            <li><strong>Subroutines</strong>: <code>#D7CCC8</code> (light brown)</li>
+            <li><strong>Commands</strong>: <code>200</code> (purple hue)
+                <ul>
+                    <li><strong>Subcategory: Wait</strong>: <code>200</code> (purple hue)</li>
+                </ul>
+            </li>
+            <li><strong>Containers</strong>: <code>#64B5F6</code> (light blue)</li>
+        </ul>
+        <p>Ensure the <code>colour</code> attribute is set correctly in the HTML (e.g., <code>&lt;category name="Constants" colour="#4CAF50"&gt;</code>) to avoid blocks appearing black.</p>
+
+        <h2 id="example">Example: Adding a Complex Block</h2>
+        <p>For a block supporting the GCBASIC <code>Print</code> command to display text on an LCD:</p>
+        
+        <ol>
+            <li><strong>Block Definition</strong>:
+                <p>Add to <code>custom_blocks.js</code>:</p>
+                <pre><code>Blockly.Blocks['lcd_display'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField('LCD Print')
+        .appendField(new Blockly.FieldTextInput('Hello'), 'TEXT');
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setTooltip('Displays text on an LCD screen.');
+    this.setHelpUrl('http://gcbasic.sourceforge.net/help/_LCD.html');
+    this.setColour(TOOLBOX_COLOUR_COMMANDS);
+
+    // Properly attach onchange handler
+    this.setOnChange(function(event) {
+      if (!this.workspace) return;
+      var textValue = this.getFieldValue('TEXT');
+      this.setWarningText(textValue.trim() === '' ? 'Text cannot be empty.' : null);
+    });
+  }
+};</code></pre>
+            </li>
+            <li><strong>Code Generator and Events</strong>:
+                <p>Add to <code>custom_blocks.js</code>:</p>
+                <pre><code>Blockly.JavaScript.forBlock['lcd_display'] = function(block) {
+  var text = block.getFieldValue('TEXT');
+  var code = 'Print ' + JSON.stringify(text) + '\n';
+  return tab() + code;
+};</code></pre>
+            </li>
+            <li><strong>Add to Toolbox</strong>:
+                <p>Append to the <code>Commands</code> category (colour <code>200</code>, purple hue):</p>
+                <pre><code>addBlockToToolbox('lcd_display', 'Commands');</code></pre>
+            </li>
+        </ol>
+
+        <h2 id="troubleshooting">Troubleshooting Common Issues</h2>
+        <ul>
+            <li><strong>Toolbox Not Updating</strong>: Check <code>custom_blocks.js</code> for correct <code>addBlockToToolbox</code> calls and verify <code>&lt;xml id="toolbox"&gt;</code> in HTML.</li>
+            <li><strong>Block Not Appearing</strong>: Confirm the block type matches in <code>Blockly.Blocks</code> and <code>addBlockToToolbox</code>.</li>
+            <li><strong>Block Appears Black</strong>: Ensure the category has a valid <code>colour</code> attribute in HTML (e.g., <code>&lt;category name="Constants" colour="#4CAF50"&gt;</code>).</li>
+            <li><strong>Invalid Code Output</strong>: Verify the generator in <code>Blockly.JavaScript.forBlock[]</code> aligns with GCBASIC syntax.</li>
+            <li><strong>Event Handlers Not Triggering</strong>: Confirm event handlers (e.g., <code>onchange</code>) are defined within <code>Blockly.JavaScript.forBlock[]</code>.</li>
+            <li><strong>JavaScript Errors</strong>: Debug syntax or reference errors in browser developer tools.</li>
+            <li><strong>Microcontroller Failure</strong>: Verify chip support and code compilation in the GCBASIC IDE.</li>
+        </ul>
+
+        <h2 id="resources">Resources</h2>
+        <ul>
+            <li><a href="http://gcbasic.sourceforge.net/help/" target="_blank">GCBASIC Help</a> for command syntax.</li>
+            <li><a href="https://www.gcbasic.com/GCBASIC_Blockly_Guide.html" target="_blank">GCBASIC Blockly Guide</a> for tool overview.</li>
+            <li><a href="https://www.gcbasic.com/GCBASIC_Blockly_Examples.html" target="_blank">GCBASIC Blockly Examples</a> for sample projects.</li>
+            <li><a href="https://www.gcbasic.com/GCBASIC_Blockly_Demos.html" target="_blank">GCBASIC Blockly Demos</a> for practical applications.</li>
+            <li><a href="https://developers.google.com/blockly/guides/create-custom-blocks/overview" target="_blank">Blockly Developer Guide</a> for JavaScript API.</li>
+            <li><a href="https://groups.google.com/g/blockly" target="_blank">Blockly Developer Forum</a> for community support.</li>
+            <li><a href="https://sourceforge.net/projects/gcbasic/" target="_blank">GCBASIC Download</a> for source code.</li>
+        </ul>
+
+        <div class="info">
+            <p><strong>Note:</strong> This guide enables developers to extend GCBASIC for Blockly by editing the <code>custom_blocks.js</code> file, which is designed for adding custom blocks, code generators, and toolbox configurations using <code>Blockly.JavaScript.forBlock[]</code> for all code generation and event handling, with blocks inheriting colours from the toolbox categories.</p>
+        </div>
+    </div>
+</body>
+</html>

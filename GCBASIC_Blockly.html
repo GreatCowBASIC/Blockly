@@ -4,6 +4,7 @@
     <script src="https://cdn.jsdelivr.net/npm/blockly@10.4.3/blockly.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    
     <style>
         #webpageconsole, #WebPageErrors {
             width: 400px;
@@ -235,7 +236,7 @@
 <body>
     <!-- Header and Title -->
     <div class="content">
-        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06192025 07:54</h1>
+        <h1 style="font-size: 12px; font-family: Arial;">BLOCKLY for GCBASIC - build 06232025 07:54</h1>
 
         <!-- Project Management Controls -->
         <div class="controlButtons">
@@ -377,6 +378,21 @@
             'user_subroutine',
             'create_list'
         ];
+
+
+        // Define toolbox category colours as constants
+        const TOOLBOX_COLOUR_SETUP = '#FFD700'; // Gold
+        const TOOLBOX_COLOUR_CONSTANTS = '#4CAF50'; // Green
+        const TOOLBOX_COLOUR_LOGIC = '#D1C4E9'; // Light purple
+        const TOOLBOX_COLOUR_MATH = '#2196F3'; // Blue
+        const TOOLBOX_COLOUR_VARIABLES = '#EF9A9A'; // Light red/pink
+        const TOOLBOX_COLOUR_LOOPS = '#A5D6A7'; // Light green
+        const TOOLBOX_COLOUR_TEXT = '#FFCA28'; // Yellow-orange
+        const TOOLBOX_COLOUR_LISTS = '#D4A017'; // Dark yellow
+        const TOOLBOX_COLOUR_SUBROUTINES = '#D7CCC8'; // Light brown
+        const TOOLBOX_COLOUR_COMMANDS = '200'; // Purple hue
+        const TOOLBOX_COLOUR_WAIT = '200'; // Purple hue (same as Commands)
+        const TOOLBOX_COLOUR_CONTAINERS = '#64B5F6'; // Light blue
 
 
         function flashOutputTab() {
@@ -7323,6 +7339,10 @@
         "clock": 4
     },
     {
+        "name": "16F1939",
+        "clock": 4
+    },
+    {
         "name": "16LF1946",
         "clock": 4
     },
@@ -10621,5 +10641,50 @@
         }
 
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        const customScript = document.createElement('script');
+        customScript.src = 'custom_blocks.js?' + Date.now();
+        customScript.onload = () => console.log('custom_blocks.js loaded.');
+        customScript.onerror = () => console.log('Note: custom_blocks.js not found, skipping.');
+        document.head.appendChild(customScript);
+        });
+
+
+        // Utility function to add a block to a toolbox category
+        function addBlockToToolbox(blockType, categoryName, extraAttributes) {
+            console.log(`Adding block "${blockType}" to category "${categoryName}".`);
+            var toolboxXml = document.getElementById('toolbox');
+            if (!toolboxXml) {
+                console.log('Toolbox with id="toolbox" not found.');
+                return;
+            }
+
+            var category = toolboxXml.querySelector(`category[name="${categoryName}"]`);
+            if (!category) {
+                console.log(`Creating category "${categoryName}".`);
+                category = document.createElement('category');
+                category.setAttribute('name', categoryName);
+                toolboxXml.appendChild(category);
+            }
+
+            if (!category.querySelector(`block[type="${blockType}"]`)) {
+                var block = document.createElement('block');
+                block.setAttribute('type', blockType);
+                // Apply extra attributes if provided
+                if (extraAttributes && typeof extraAttributes === 'object') {
+                Object.keys(extraAttributes).forEach(function(key) {
+                    block.setAttribute(key, extraAttributes[key]);
+                });
+                }
+                category.appendChild(block);
+                console.log(`Block "${blockType}" added to "${categoryName}".`);
+            } else {
+                console.log(`Block "${blockType}" already exists in "${categoryName}".`);
+            }
+        }
+    </script>
+
 </body>
 </html>
