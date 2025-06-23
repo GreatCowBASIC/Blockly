@@ -10,11 +10,18 @@
 
 To install a local copy of GCBASIC Blockly -  <a href="https://www.gcbasic.com/GCBASIC_Blockly_Guide.html" target="_blank">follow this guide</a>
 
+To add Block capabilities -  <a href="https://www.gcbasic.com/GCBASIC_Blocky_Development.html" target="_blank">follow this guide</a>
+
+
 To download example GCBASIC Blockly projects - <a href="https://www.gcbasic.com/GCBASIC_Blockly_Demos.html" target="_blank">see the download page</a>
 
 Direct access to other online demonstrations - <a href="https://www.gcbasic.com/GCBASIC_Blockly_Examples.html" target="_blank">see the example guide</a>
 
 ---
+
+# Version 06.23.2025.01
+- Add `custom_blocks.js' and documentation to support development process.
+
 
 # Version 06.18.2025.01
 - Implemented flashing GCBASIC Code tab when generate code selected.
