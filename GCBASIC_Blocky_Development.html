@@ -286,7 +286,7 @@
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setTooltip('Sets a microcontroller port pin to ON or OFF.');
-    this.setHelpUrl('http://gcbasic.sourceforge.net/help/_SET.html');
+    this.setHelpUrl('http://gcbasic.sourceforge.net/help/_set.html');
     this.setColour(200); // Adds the color hue
     // Attach onchange here instead
     this.setOnChange(function(event) {
@@ -412,12 +412,12 @@ Block "set_port" added to "Commands".</code></pre>
                 <pre><code>Blockly.Blocks['lcd_display'] = {
   init: function() {
     this.appendDummyInput()
-        .appendField('LCD Print')
+        .appendField('LCD Print String')
         .appendField(new Blockly.FieldTextInput('Hello'), 'TEXT');
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setTooltip('Displays text on an LCD screen.');
-    this.setHelpUrl('http://gcbasic.sourceforge.net/help/_LCD.html');
+    this.setHelpUrl('https://gcbasic.sourceforge.io/help/_print.html');
     this.setColour(TOOLBOX_COLOUR_COMMANDS);
 
     // Properly attach onchange handler
