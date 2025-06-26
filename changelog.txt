@@ -19,6 +19,9 @@ Direct access to other online demonstrations - <a href="https://www.gcbasic.com/
 
 ---
 
+# Version 06.26.2025.01
+- Revised `custom_blocks.js' and documentation to support development process to support Help pages.
+
 # Version 06.23.2025.01
 - Add `custom_blocks.js' and documentation to support development process.
 
